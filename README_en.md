@@ -1,7 +1,7 @@
 ### [简体中文](./README.md) | English
 
 ![License](https://img.shields.io/badge/license-MIT-green)
-[![release](https://img.shields.io/github/v/release/kylelin1998/ReleasesMonitorTelegramBot)](https://github.com/kylelin1998/ReleasesMonitorTelegramBot/releases/latest)
+[![release](https://img.shields.io/github/v/release/kylelin1998/RssMonitorTelegramBot)](https://github.com/kylelin1998/RssMonitorTelegramBot/releases/latest)
 
 ## Introduction
 Monitor articles for RSS

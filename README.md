@@ -1,7 +1,7 @@
 ### 简体中文 | [English](./README_en.md)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
-[![release](https://img.shields.io/github/v/release/kylelin1998/ReleasesMonitorTelegramBot)](https://github.com/kylelin1998/ReleasesMonitorTelegramBot/releases/latest)
+[![release](https://img.shields.io/github/v/release/kylelin1998/RssMonitorTelegramBot)](https://github.com/kylelin1998/RssMonitorTelegramBot/releases/latest)
 
 ## 简介
 RSS监控最新文章， 如果有监控到最新文章会通知到您设置好的Telegram群聊， 频道， 或者个人号上
