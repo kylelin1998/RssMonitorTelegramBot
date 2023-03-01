@@ -52,6 +52,7 @@ Bot Admin mainly means only you can trigger command to manage monitor plans
 * chatIdArray -> Send to chat id list
 
 You need to send commands in the chat interface of the bot to manage monitor plans, command for example:
+* /language
 * /cmd create \<monitor name>
 * /cmd list
 * /cmd get \<monitor name>

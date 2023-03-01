@@ -14,9 +14,9 @@ import org.telegram.telegrambots.meta.bots.AbsSender;
 import static code.Main.GlobalConfig;
 
 @Slf4j
-public class CmdCommand extends BotCommand {
-    public CmdCommand() {
-        super("cmd", "");
+public class LanguageCommand extends BotCommand {
+    public LanguageCommand() {
+        super("language", "");
     }
 
     @Override
@@ -31,7 +31,7 @@ public class CmdCommand extends BotCommand {
             return;
         }
 
-        CmdHandler.handle(chatId, message, arguments);
+        Handler.showLanguageListHandle(chatId);
     }
 
     @Override

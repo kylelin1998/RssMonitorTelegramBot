@@ -2,7 +2,6 @@ package code.handler;
 
 import code.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.utils.CloneUtils;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;

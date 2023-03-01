@@ -1,6 +1,7 @@
 package code.handler;
 
 import code.commands.CmdCommand;
+import code.commands.LanguageCommand;
 import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +28,7 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
 
     public void start() {
         register(new CmdCommand());
+        register(new LanguageCommand());
     }
 
     @Override

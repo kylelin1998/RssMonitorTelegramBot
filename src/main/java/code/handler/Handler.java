@@ -1,8 +1,6 @@
 package code.handler;
 
-import code.config.Config;
-import code.config.MonitorConfigSettings;
-import code.config.RequestProxyConfig;
+import code.config.*;
 import code.util.ExceptionUtil;
 import code.util.RssUtil;
 import com.alibaba.fastjson2.JSON;
@@ -58,7 +56,8 @@ public class Handler {
             ArrayList<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
 
             for (MonitorConfigSettings settings : list) {
-                builder.append(String.format("name: %s, on: %s \n\n", settings.getFileBasename(), settings.getOn()));
+                builder.append(I18nHandle.getText(chatId, I18nEnum.MonitorList, settings.getFileBasename(), settings.getOn()));
+                builder.append("\n\n");
 
                 InlineKeyboardButton button = new InlineKeyboardButton();
                 button.setText(settings.getFileBasename());
@@ -68,7 +67,7 @@ public class Handler {
 
             MessageHandler.sendInlineKeyboard(chatId, builder.toString(), inlineKeyboardButtons);
         } else {
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Nothing here of monitor file, come to create it.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.NothingHere), false);
         }
     }
 
@@ -76,24 +75,24 @@ public class Handler {
         MonitorConfigSettings settings = Config.readMonitorConfig(text);
         if (null != settings) {
             InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
-            inlineKeyboardButton.setText("On");
+            inlineKeyboardButton.setText(I18nHandle.getText(chatId, I18nEnum.On));
             inlineKeyboardButton.setCallbackData("on " + settings.getFileBasename());
 
             InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
-            inlineKeyboardButton2.setText("Off");
+            inlineKeyboardButton2.setText(I18nHandle.getText(chatId, I18nEnum.Off));
             inlineKeyboardButton2.setCallbackData("off " + settings.getFileBasename());
 
             InlineKeyboardButton inlineKeyboardButton3 = new InlineKeyboardButton();
-            inlineKeyboardButton3.setText("Test");
+            inlineKeyboardButton3.setText(I18nHandle.getText(chatId, I18nEnum.Test));
             inlineKeyboardButton3.setCallbackData("test " + settings.getFileBasename());
 
             InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
-            inlineKeyboardButton4.setText("Update");
+            inlineKeyboardButton4.setText(I18nHandle.getText(chatId, I18nEnum.Update));
             inlineKeyboardButton4.setCallbackData("update " + settings.getFileBasename());
 
             MessageHandler.sendInlineKeyboard(chatId, settings.toString(), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton4);
         } else {
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Not found.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.NotFound), false);
         }
     }
 
@@ -102,9 +101,9 @@ public class Handler {
         if (null != settings) {
             settings.setOn(true);
             Config.saveMonitorConfig(settings);
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Saved success, Monitor changed online status.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.OnMonitor), false);
         } else {
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Not found.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.NotFound), false);
         }
     }
     public static void offMonitorHandle(String chatId, Integer replyToMessageId, String text) {
@@ -112,9 +111,9 @@ public class Handler {
         if (null != settings) {
             settings.setOn(false);
             Config.saveMonitorConfig(settings);
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Saved success, Monitor changed offline status.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.OffMonitor), false);
         } else {
-            sendMessageWithTryCatch(chatId, replyToMessageId, "Not found.", false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.NotFound), false);
         }
     }
 
@@ -122,7 +121,7 @@ public class Handler {
         addMonitorMap.remove(chatId);
         updateMonitorMap.remove(chatId);
 
-        sendMessageWithTryCatch(chatId, replyToMessageId, "Exited success.", false);
+        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.ExitEditMode), false);
     }
 
     public static void createMonitorHandle(boolean first, String chatId, Integer replyToMessageId, String text) {
@@ -136,33 +135,33 @@ public class Handler {
                 if (first && !addMonitorMap.containsKey(chatId)) {
                     addMonitorMap.put(chatId, new ArrayList<String>());
 
-                    sendMessageWithTryCatch(chatId, "Please send me the name of the monitor, and I will create it.", false);
+                    sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor1), false);
                     return;
                 }
                 if (addMonitorMap.containsKey(chatId)) {
                     List<String> list = addMonitorMap.get(chatId);
                     if (list.size() == 0) {
                         list.add(text);
-                        sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Monitor named %s, created.", text), false);
-                        sendMessageWithTryCatch(chatId, "Please continue to send me what you want set-up RSS URL", false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor2, text), false);
+                        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor3), false);
                         return;
                     }
                     if (list.size() == 1) {
-                        sendMessageWithTryCatch(chatId, replyToMessageId, "Verifying the URL of RSS...please be patient.", false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor4), false);
                         SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), text);
                         if (null == feed) {
-                            sendMessageWithTryCatch(chatId, replyToMessageId, "Only support XML of RSS, please send me the new URL of RSS again.", false);
+                            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor5), false);
                             return;
                         }
 
                         list.add(text);
-                        sendMessageWithTryCatch(chatId, replyToMessageId, String.format("RSS URL: %s.", text), false);
-                        sendMessageWithTryCatch(chatId, "Please continue to send me to template content", false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor6, text), false);
+                        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor7), false);
                         return;
                     }
                     if (list.size() == 2) {
                         list.add(text);
-                        sendMessageWithTryCatch(chatId, replyToMessageId, String.format("template content:\n %s.", text), false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.CreateMonitor8, text), false);
                         // save to file
                         MonitorConfigSettings settings = new MonitorConfigSettings();
                         settings.setFileBasename(list.get(0));
@@ -177,7 +176,7 @@ public class Handler {
                         addMonitorMap.remove(chatId);
 
                         showMonitorHandle(chatId, replyToMessageId, list.get(0));
-                        sendMessageWithTryCatch(chatId, "Created finish! Requesting, please be patient.", false);
+                        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.CreateMonitorFinish), false);
                         rssMessageHandle(settings, true);
 
                         return;
@@ -185,7 +184,7 @@ public class Handler {
                 }
             } catch (Exception e) {
                 log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-                sendMessageWithTryCatch(chatId, replyToMessageId, "System unknown error.", false);
+                sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.UnknownError), false);
             }
         }
     }
@@ -193,7 +192,7 @@ public class Handler {
     public static void testMonitorHandle(String chatId, Integer replyToMessageId, String text) {
         MonitorConfigSettings settings = Config.readMonitorConfig(text);
         if (null == settings) {
-            sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Monitor named %s, not found, please send me again.", text), false);
+            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.TestMonitor, text), false);
             return;
         }
         rssMessageHandle(settings, true);
@@ -209,7 +208,7 @@ public class Handler {
             if (first && !updateMonitorMap.containsKey(chatId)) {
                 MonitorConfigSettings settings = Config.readMonitorConfig(text);
                 if (null == settings) {
-                    sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Monitor named %s, not found, please send me again.", text), false);
+                    sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.NotFoundMonitor, text), false);
                     return;
                 }
 
@@ -224,7 +223,7 @@ public class Handler {
                     keyboardRows.add(row);
                 }
 
-                MessageHandler.sendCustomKeyboard(chatId, "Please continue to send me what you want set-up field name", keyboardRows);
+                MessageHandler.sendCustomKeyboard(chatId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitor1), keyboardRows);
                 return;
             }
             if (updateMonitorMap.containsKey(chatId)) {
@@ -234,12 +233,12 @@ public class Handler {
                         MonitorConfigSettings settings = Config.readMonitorConfig(list.get(0));
                         Field field = settings.getClass().getDeclaredField(text);
                         if (null == field) {
-                            sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Field named %s, not found, please send me again.", text), false);
+                            sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitor2, text), false);
                             return;
                         }
 
                         list.add(text);
-                        sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Field name: %s", text), false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitor3, text), false);
 
                         Class<?> type = field.getType();
                         if (type == Boolean.class) {
@@ -247,14 +246,14 @@ public class Handler {
                             row.add("true");
                             row.add("false");
 
-                            MessageHandler.sendCustomKeyboard(chatId, "Please continue to send me what you want set-up field value", row);
+                            MessageHandler.sendCustomKeyboard(chatId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitor4), row);
                             return;
                         }
 
-                        sendMessageWithTryCatch(chatId, "Please continue to send me what you want set-up field value", false);
+                        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitor4), false);
                     } catch (NoSuchFieldException e) {
                         log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-                        sendMessageWithTryCatch(chatId, replyToMessageId, "System unknown error.", false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.UnknownError), false);
                     }
 
                     return;
@@ -288,9 +287,9 @@ public class Handler {
                         updateMonitorMap.remove(chatId);
 
                         showMonitorHandle(chatId, replyToMessageId, list.get(0));
-                        sendMessageWithTryCatch(chatId, "Updated finish! ", false);
+                        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.UpdateMonitorFinish), false);
                     } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException e) {
-                        sendMessageWithTryCatch(chatId, replyToMessageId, "Field error.", false);
+                        sendMessageWithTryCatch(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.UpdateFieldError), false);
                     }
 
                     return;
@@ -307,12 +306,12 @@ public class Handler {
             if ((null != on && on) || isTest) {
                 SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), configSettings.getUrl());
                 if (null == feed) {
-                    if (isTest) sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), "Only support XML of RSS, please send me the new URL of RSS again.", false);
+                    if (isTest) sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.CreateMonitor5), false);
                     return;
                 }
                 List<SyndEntry> entries = feed.getEntries();
                 if (null == entries || entries.isEmpty()) {
-                    if (isTest) sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), "Nothing at all.", false);
+                    if (isTest) sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
                 if (!SentRecordTableRepository.selectExistByMonitorName(fileBasename)) {
@@ -395,6 +394,30 @@ public class Handler {
         return null;
     }
 
+    public static void showLanguageListHandle(String chatId) {
+        ArrayList<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
+        for (I18nLocaleEnum value : I18nLocaleEnum.values()) {
+            InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
+            inlineKeyboardButton.setText(value.getDisplayText());
+            inlineKeyboardButton.setCallbackData("language " + value.getAlias());
+
+            inlineKeyboardButtons.add(inlineKeyboardButton);
+        }
+
+        MessageHandler.sendInlineKeyboard(chatId, I18nHandle.getText(chatId, I18nEnum.LanguageList), inlineKeyboardButtons);
+    }
+
+    public static void changeLanguageHandle(String chatId, String text) {
+        I18nLocaleEnum alias = I18nLocaleEnum.getI18nLocaleEnumByAlias(text);
+        if (null == alias) {
+            sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.UnknownError), false);
+            return;
+        }
+
+        I18nHandle.save(chatId, alias);
+
+        sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.ChangeLanguageFinish), false);
+    }
 
     public static Message sendMessageWithTryCatch(String chatId, String text, boolean webPagePreview) {
         return sendMessageWithTryCatch(chatId, null, text, webPagePreview, true);

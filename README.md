@@ -52,6 +52,7 @@ bot admin主要作用是设置成只有你才能触发命令
 * chatIdArray -> 需要发送的Chat Id列表
 
 你需要在机器人聊天界面发送对应命令去执行管理监控计划， 命令如下：
+* /language
 * /cmd create \<monitor name>
 * /cmd list
 * /cmd get \<monitor name>

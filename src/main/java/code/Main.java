@@ -2,10 +2,12 @@ package code;
 
 import code.config.Config;
 import code.config.ConfigSettings;
+import code.config.I18nEnum;
 import code.config.RequestProxyConfig;
 import code.handler.CommandsHandler;
 import code.handler.Handler;
-import code.repository.SentRecordTableRepository;
+import code.handler.I18nHandle;
+import code.repository.*;
 import code.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -17,6 +19,7 @@ public class Main {
     public static CommandsHandler Bot = null;
     public static ConfigSettings GlobalConfig = Config.readConfig();
     public static code.repository.SentRecordTableRepository SentRecordTableRepository = new SentRecordTableRepository();
+    public static code.repository.I18nTableRepository I18nTableRepository = new I18nTableRepository();
 
     public static void main(String[] args) {
         new Thread(() -> {
@@ -38,7 +41,7 @@ public class Main {
                 while (true) {
                     try {
                         if (null != Bot) {
-                            Handler.sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), "Bot program start succeed", false);
+                            Handler.sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.BotStartSucceed), false);
                             break;
                         }
 

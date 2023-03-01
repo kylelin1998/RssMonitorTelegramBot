@@ -47,6 +47,11 @@ public class CmdHandler {
                     Handler.updateMonitorHandle(false, chatId, message.getMessageId(), arguments[2]);
                 }
             }
+        } else if (argument.equals("language")) {
+            if (argument.length() > 1) {
+                String argument1 = arguments[1];
+                Handler.changeLanguageHandle(chatId, argument1);
+            }
         }
 
     }
