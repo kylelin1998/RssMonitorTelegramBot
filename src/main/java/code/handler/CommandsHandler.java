@@ -41,7 +41,9 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
 
     @Override
     public void processNonCommandUpdate(Update update) {
-        log.info(JSON.toJSONString(update));
+        if (GlobalConfig.getDebug()) {
+            log.info(JSON.toJSONString(update));
+        }
 
         CallbackQuery callbackQuery = update.getCallbackQuery();
         if (null != callbackQuery) {

@@ -41,6 +41,10 @@ public class Config {
             if (exists) {
                 String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
                 ConfigSettings configSettings = JSON.parseObject(text, ConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
+                Boolean debug = configSettings.getDebug();
+                if (null == debug) {
+                    configSettings.setDebug(false);
+                }
                 return configSettings;
             }
         } catch (IOException e) {

@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class ConfigSettings {
 
+    public Boolean debug;
+
     public Boolean onProxy;
     public String proxyHost;
     public Integer proxyPort;
