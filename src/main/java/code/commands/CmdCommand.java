@@ -1,6 +1,7 @@
 package code.commands;
 
-import code.Handler;
+import code.handler.CmdHandler;
+import code.handler.Handler;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -28,43 +29,7 @@ public class CmdCommand extends BotCommand {
             return;
         }
 
-        if (arguments.length < 1) {
-            return;
-        }
-
-        String argument = arguments[0].toLowerCase();
-        if (argument.equals("create")) {
-            Handler.createMonitorHandle(true, chatId, message.getMessageId(), null);
-        } else if (argument.equals("list")) {
-            Handler.showMonitorListHandle(chatId, message.getMessageId());
-        } else if (argument.equals("get")) {
-            if (argument.length() > 1) {
-                String argument1 = arguments[1];
-                Handler.showMonitorHandle(chatId, message.getMessageId(), argument1);
-            }
-        } else if (argument.equals("exit")) {
-            Handler.exitEditModeHandle(chatId, message.getMessageId());
-        } else if (argument.equals("update")) {
-            if (argument.length() > 1) {
-                String argument1 = arguments[1];
-                Handler.updateMonitorHandle(true, chatId, message.getMessageId(), argument1);
-            }
-        } else if (argument.equals("test")) {
-            if (argument.length() > 1) {
-                String argument1 = arguments[1];
-                Handler.testMonitorHandle(chatId, message.getMessageId(), argument1);
-            }
-        } else if (argument.equals("on")) {
-            if (argument.length() > 1) {
-                String argument1 = arguments[1];
-                Handler.onMonitorHandle(chatId, message.getMessageId(), argument1);
-            }
-        } else if (argument.equals("off")) {
-            if (argument.length() > 1) {
-                String argument1 = arguments[1];
-                Handler.offMonitorHandle(chatId, message.getMessageId(), argument1);
-            }
-        }
+        CmdHandler.handle(chatId, message, arguments);
     }
 
     @Override

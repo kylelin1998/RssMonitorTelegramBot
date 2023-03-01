@@ -1,9 +1,12 @@
-package code;
+package code.handler;
 
 import code.commands.CmdCommand;
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -38,6 +41,23 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
 
     @Override
     public void processNonCommandUpdate(Update update) {
+        log.info(JSON.toJSONString(update));
+
+        CallbackQuery callbackQuery = update.getCallbackQuery();
+        if (null != callbackQuery) {
+            String chatId = String.valueOf(callbackQuery.getFrom().getId());
+            if (!chatId.equals(GlobalConfig.getBotAdminId())) {
+                return;
+            }
+
+            String data = callbackQuery.getData();
+            if (StringUtils.isNotBlank(data)) {
+                String[] arguments = data.split(" ");
+                CmdHandler.handle(chatId, callbackQuery.getMessage(), arguments);
+                return;
+            }
+        }
+
         Message message = update.getMessage();
         if (null == message) {
             return;

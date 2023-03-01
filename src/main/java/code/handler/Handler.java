@@ -1,4 +1,4 @@
-package code;
+package code.handler;
 
 import code.config.Config;
 import code.config.MonitorConfigSettings;
@@ -16,13 +16,18 @@ import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import static code.Main.*;
 import static code.Main.Bot;
-import static code.Main.GlobalConfig;
-import static code.Main.SentRecordTableRepository;
 
 @Slf4j
 public class Handler {
@@ -38,7 +43,7 @@ public class Handler {
                         rssMessageHandle(configSettings, false);
                     }
 
-                    Thread.sleep(GlobalConfig.getIntervalMinute() * 60 * 1000);
+                    TimeUnit.MINUTES.sleep(GlobalConfig.getIntervalMinute());
                 } catch (Exception e) {
                     log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
                 }
@@ -50,10 +55,18 @@ public class Handler {
         List<MonitorConfigSettings> list = Config.readMonitorConfigList();
         if (list.size() > 0) {
             StringBuilder builder = new StringBuilder();
+            ArrayList<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
+
             for (MonitorConfigSettings settings : list) {
                 builder.append(String.format("name: %s, on: %s \n\n", settings.getFileBasename(), settings.getOn()));
+
+                InlineKeyboardButton button = new InlineKeyboardButton();
+                button.setText(settings.getFileBasename());
+                button.setCallbackData("get " + settings.getFileBasename());
+                inlineKeyboardButtons.add(button);
             }
-            sendMessageWithTryCatch(chatId, replyToMessageId, builder.toString(), false);
+
+            MessageHandler.sendInlineKeyboard(chatId, builder.toString(), inlineKeyboardButtons);
         } else {
             sendMessageWithTryCatch(chatId, replyToMessageId, "Nothing here of monitor file, come to create it.", false);
         }
@@ -62,7 +75,23 @@ public class Handler {
     public static void showMonitorHandle(String chatId, Integer replyToMessageId, String text) {
         MonitorConfigSettings settings = Config.readMonitorConfig(text);
         if (null != settings) {
-            sendMessageWithTryCatch(chatId, replyToMessageId, settings.toString(), false);
+            InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
+            inlineKeyboardButton.setText("On");
+            inlineKeyboardButton.setCallbackData("on " + settings.getFileBasename());
+
+            InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+            inlineKeyboardButton2.setText("Off");
+            inlineKeyboardButton2.setCallbackData("off " + settings.getFileBasename());
+
+            InlineKeyboardButton inlineKeyboardButton3 = new InlineKeyboardButton();
+            inlineKeyboardButton3.setText("Test");
+            inlineKeyboardButton3.setCallbackData("test " + settings.getFileBasename());
+
+            InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
+            inlineKeyboardButton4.setText("Update");
+            inlineKeyboardButton4.setCallbackData("update " + settings.getFileBasename());
+
+            MessageHandler.sendInlineKeyboard(chatId, settings.toString(), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton4);
         } else {
             sendMessageWithTryCatch(chatId, replyToMessageId, "Not found.", false);
         }
@@ -143,6 +172,7 @@ public class Handler {
                         settings.setUrl(list.get(1));
                         settings.setWebPagePreview(true);
                         settings.setChatIdArray(new String[]{});
+                        settings.setNotification(true);
                         Config.saveMonitorConfig(settings);
                         addMonitorMap.remove(chatId);
 
@@ -183,11 +213,18 @@ public class Handler {
                     return;
                 }
 
-                updateMonitorMap.put(chatId, new ArrayList<String>());
+                updateMonitorMap.put(chatId, new ArrayList<>());
                 List<String> list = updateMonitorMap.get(chatId);
                 list.add(text);
 
-                sendMessageWithTryCatch(chatId, "Please continue to send me what you want set-up field name", false);
+                ArrayList<KeyboardRow> keyboardRows = new ArrayList<>();
+                for (Field field : settings.getClass().getFields()) {
+                    KeyboardRow row = new KeyboardRow();
+                    row.add(field.getName());
+                    keyboardRows.add(row);
+                }
+
+                MessageHandler.sendCustomKeyboard(chatId, "Please continue to send me what you want set-up field name", keyboardRows);
                 return;
             }
             if (updateMonitorMap.containsKey(chatId)) {
@@ -203,6 +240,17 @@ public class Handler {
 
                         list.add(text);
                         sendMessageWithTryCatch(chatId, replyToMessageId, String.format("Field name: %s", text), false);
+
+                        Class<?> type = field.getType();
+                        if (type == Boolean.class) {
+                            KeyboardRow row = new KeyboardRow();
+                            row.add("true");
+                            row.add("false");
+
+                            MessageHandler.sendCustomKeyboard(chatId, "Please continue to send me what you want set-up field value", row);
+                            return;
+                        }
+
                         sendMessageWithTryCatch(chatId, "Please continue to send me what you want set-up field value", false);
                     } catch (NoSuchFieldException e) {
                         log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
@@ -212,16 +260,28 @@ public class Handler {
                     return;
                 }
                 if (list.size() == 2) {
-                    list.add(text);
+//                    list.add(text);
 
                     try {
                         MonitorConfigSettings settings = Config.readMonitorConfig(list.get(0));
                         Field field = settings.getClass().getDeclaredField(list.get(1));
-                        field.setAccessible(true);
-                        if (text.equals("true") || text.equals("false")) {
-                            field.set(settings, Boolean.valueOf(text));
+
+                        if (field.getType() == String[].class) {
+                            ArrayList<String> arrayList = new ArrayList<>();
+                            for (String s : text.split(" ")) {
+                                if (StringUtils.isNotBlank(s)) {
+                                    arrayList.add(s);
+                                }
+                            }
+
+
+                            field.set(settings, arrayList.toArray(new String[0]));
                         } else {
-                            field.set(settings, text);
+                            if (text.equals("true") || text.equals("false")) {
+                                field.set(settings, Boolean.valueOf(text));
+                            } else {
+                                field.set(settings, text);
+                            }
                         }
 
                         Config.saveMonitorConfig(settings);
@@ -229,9 +289,8 @@ public class Handler {
 
                         showMonitorHandle(chatId, replyToMessageId, list.get(0));
                         sendMessageWithTryCatch(chatId, "Updated finish! ", false);
-                    } catch (IllegalAccessException | NoSuchFieldException e) {
-                        log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-                        sendMessageWithTryCatch(chatId, replyToMessageId, "System unknown error.", false);
+                    } catch (IllegalAccessException | NoSuchFieldException | IllegalArgumentException e) {
+                        sendMessageWithTryCatch(chatId, replyToMessageId, "Field error.", false);
                     }
 
                     return;
@@ -280,7 +339,7 @@ public class Handler {
                                 chatIdArray = GlobalConfig.getChatIdArray();
                             }
                             for (String s : chatIdArray) {
-                                sendMessageWithTryCatch(s, text, configSettings.getWebPagePreview());
+                                sendMessageWithTryCatch(s, text, configSettings.getWebPagePreview(), configSettings.getNotification());
                             }
 
                             if (GlobalConfig.getChatIdArray().length > 0) {
@@ -288,7 +347,7 @@ public class Handler {
                                 Config.saveMonitorConfig(configSettings);
                             }
                         } else {
-                            sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), text, configSettings.getWebPagePreview());
+                            sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), text, configSettings.getWebPagePreview(), configSettings.getNotification());
                             if (i >= 4) {
                                 break;
                             }
@@ -338,14 +397,23 @@ public class Handler {
 
 
     public static Message sendMessageWithTryCatch(String chatId, String text, boolean webPagePreview) {
-        return sendMessageWithTryCatch(chatId, null, text, webPagePreview);
+        return sendMessageWithTryCatch(chatId, null, text, webPagePreview, true);
+    }
+    public static Message sendMessageWithTryCatch(String chatId, String text, boolean webPagePreview, boolean notification) {
+        return sendMessageWithTryCatch(chatId, null, text, webPagePreview, notification);
     }
     public static Message sendMessageWithTryCatch(String chatId, Integer replyToMessageId, String text, boolean webPagePreview) {
+        return sendMessageWithTryCatch(chatId, replyToMessageId, text, webPagePreview, true);
+    }
+    public static Message sendMessageWithTryCatch(String chatId, Integer replyToMessageId, String text, boolean webPagePreview, boolean notification) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         sendMessage.setReplyToMessageId(replyToMessageId);
         sendMessage.setText(text);
         sendMessage.setParseMode(ParseMode.HTML);
+        if (!notification) {
+            sendMessage.disableNotification();
+        }
         if (!webPagePreview) {
             sendMessage.disableWebPagePreview();
         }

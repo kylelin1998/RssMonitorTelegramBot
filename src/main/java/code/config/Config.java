@@ -59,6 +59,9 @@ public class Config {
                     String text = FileUtils.readFileToString(monitorFile, StandardCharsets.UTF_8);
                     MonitorConfigSettings configSettings = JSON.parseObject(text, MonitorConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
                     configSettings.setFilename(name);
+                    if (null == configSettings.getNotification()) {
+                        configSettings.setNotification(true);
+                    }
                     list.add(configSettings);
                 }
             } catch (IOException e) {
@@ -70,11 +73,21 @@ public class Config {
     }
 
     public synchronized static MonitorConfigSettings readMonitorConfig(String fileBasename) {
-        List<MonitorConfigSettings> list = readMonitorConfigList();
-        for (MonitorConfigSettings settings : list) {
-            if (settings.getFileBasename().equals(fileBasename)) {
-                return settings;
+        try {
+            File file = new File(MonitorDir + "/" + fileBasename + ".json");
+            if (!file.exists() || !file.isFile()) return null;
+
+            String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+
+            MonitorConfigSettings configSettings = JSON.parseObject(text, MonitorConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
+            configSettings.setFilename(fileBasename + ".json");
+            if (null == configSettings.getNotification()) {
+                configSettings.setNotification(true);
             }
+
+            return configSettings;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
         }
         return null;
     }
