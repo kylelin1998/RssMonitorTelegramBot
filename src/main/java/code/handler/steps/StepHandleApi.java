@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface StepHandleApi {
 
-    boolean execute(String chatId, String text, List<String> list);
+    boolean execute(String chatId, Integer replyToMessageId, String text, int index, List<String> list);
 
 }

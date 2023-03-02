@@ -23,6 +23,11 @@ public class I18nConfig {
         }
     }
 
+    public static String getText(String i18nAlias, String key) {
+        Map<String, String> map = cacheMap.get(StringUtils.isNotBlank(i18nAlias) ? i18nAlias : I18nLocaleEnum.ZH_CN.getAlias());
+        return map.get(key);
+    }
+
     public static String getText(String i18nAlias, I18nEnum i18nEnum) {
         Map<String, String> map = cacheMap.get(StringUtils.isNotBlank(i18nAlias) ? i18nAlias : I18nLocaleEnum.ZH_CN.getAlias());
         return map.get(i18nEnum.getKey());

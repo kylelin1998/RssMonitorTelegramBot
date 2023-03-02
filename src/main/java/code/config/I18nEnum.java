@@ -25,6 +25,7 @@ public enum I18nEnum {
     Confirm("confirm"),
     Cancel("cancel"),
     Delete("delete"),
+    Finish("finish"),
 
     LanguageList("language_list"),
     ChangeLanguageFinish("change_language_finish"),
@@ -54,6 +55,16 @@ public enum I18nEnum {
 
     DeleteMonitorConfirm("delete_monitor_confirm"),
     DeleteMonitorFinish("delete_monitor_finish"),
+
+
+    ConfigDisplayOn("config_display_on"),
+    ConfigDisplayWebPagePreview("config_display_web_page_preview"),
+    ConfigDisplayNotification("config_display_notification"),
+    ConfigDisplayZeroDelay("config_display_zero_delay"),
+    ConfigDisplayUrl("config_display_url"),
+    ConfigDisplayTemplate("config_display_template"),
+    ConfigDisplayChatIdArray("config_display_chat_id_array"),
+    ConfigDisplayFileBasename("config_display_file_basename"),
 
     ;
 

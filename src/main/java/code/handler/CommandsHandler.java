@@ -72,8 +72,8 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
         }
 
         String text = message.getText();
-        Handler.createMonitorHandle(false, chatId, message.getMessageId(), text);
-        Handler.updateMonitorHandle(false, chatId, message.getMessageId(), text);
+        Handler.CreateStepsHandler.step(chatId, message.getMessageId(), text);
+        Handler.UpdateStepsHandler.step(chatId, message.getMessageId(), text);
     }
 
 }

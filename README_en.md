@@ -81,5 +81,4 @@ ${title}
 ${link}
 ```
 
-![76a8a4773462df933b7b9c53492bd4eef98f49fd.png](https://i.imgur.com/M4zBGla.png)
-![b4417bb31dd3b912b7017c95841e3c4e26df710b.png](https://i.imgur.com/9Emxu6T.png)
+![3fdb60f99c4cb66084eea0a8116b7342d96a1039.png](https://openimg.kylelin1998.com/img/3fdb60f99c4cb66084eea0a8116b7342d96a1039.png)

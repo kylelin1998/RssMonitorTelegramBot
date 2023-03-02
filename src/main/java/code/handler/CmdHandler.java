@@ -10,7 +10,7 @@ public class CmdHandler {
 
         String argument = arguments[0].toLowerCase();
         if (argument.equals("create")) {
-            Handler.createMonitorHandle(true, chatId, message.getMessageId(), null);
+            Handler.CreateStepsHandler.init(chatId, message.getMessageId(), "");
         } else if (argument.equals("list")) {
             Handler.showMonitorListHandle(chatId, message.getMessageId());
         } else if (argument.equals("get")) {
@@ -23,7 +23,7 @@ public class CmdHandler {
         } else if (argument.equals("update")) {
             if (argument.length() > 1) {
                 String argument1 = arguments[1];
-                Handler.updateMonitorHandle(true, chatId, message.getMessageId(), argument1);
+                Handler.UpdateStepsHandler.init(chatId, message.getMessageId(), argument1);
             }
         } else if (argument.equals("test")) {
             if (argument.length() > 1) {
@@ -44,9 +44,9 @@ public class CmdHandler {
             if (argument.length() > 1) {
                 String argument1 = arguments[1].toLowerCase();
                 if (argument1.equals("update")) {
-                    Handler.updateMonitorHandle(false, chatId, message.getMessageId(), arguments[2]);
+                    Handler.UpdateStepsHandler.step(chatId, message.getMessageId(), arguments[2]);
                 } else if (argument1.equals("delete")) {
-                    Handler.DeleteStepsHandler.step(chatId, arguments[2]);
+                    Handler.DeleteStepsHandler.step(chatId, message.getMessageId(), arguments[2]);
                 }
             }
         } else if (argument.equals("language")) {
@@ -57,7 +57,7 @@ public class CmdHandler {
         } else if (argument.equals("delete")) {
             if (argument.length() > 1) {
                 String argument1 = arguments[1];
-                Handler.DeleteStepsHandler.init(chatId, argument1);
+                Handler.DeleteStepsHandler.init(chatId, message.getMessageId(), argument1);
             }
         }
 
