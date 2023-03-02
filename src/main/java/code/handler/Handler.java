@@ -168,6 +168,7 @@ public class Handler {
     public static void exitEditModeHandle(String chatId, Integer replyToMessageId) {
         addMonitorMap.remove(chatId);
         updateMonitorMap.remove(chatId);
+        DeleteStepsHandler.exit(chatId);
 
         MessageHandle.sendMessage(chatId, replyToMessageId, I18nHandle.getText(chatId, I18nEnum.ExitEditMode), false);
     }
