@@ -7,6 +7,7 @@ import code.config.RequestProxyConfig;
 import code.handler.CommandsHandler;
 import code.handler.Handler;
 import code.handler.I18nHandle;
+import code.handler.MessageHandle;
 import code.repository.*;
 import code.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ public class Main {
                 while (true) {
                     try {
                         if (null != Bot) {
-                            Handler.sendMessageWithTryCatch(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.BotStartSucceed), false);
+                            MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.BotStartSucceed), false);
                             break;
                         }
 

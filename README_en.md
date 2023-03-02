@@ -54,6 +54,7 @@ Bot Admin mainly means only you can trigger command to manage monitor plans
 You need to send commands in the chat interface of the bot to manage monitor plans, command for example:
 * /language
 * /cmd create \<monitor name>
+* /cmd delete \<monitor name>
 * /cmd list
 * /cmd get \<monitor name>
 * /cmd update \<monitor name>
@@ -61,6 +62,11 @@ You need to send commands in the chat interface of the bot to manage monitor pla
 * /cmd off \<monitor name>
 * /cmd test \<monitor name>
 * /cmd exit
+
+Monitor config description
+* webPagePreview -> Web page preview
+* notification -> Notification switch
+* zeroDelay -> Zero delays to monitor
 
 template:
 Support custom message content

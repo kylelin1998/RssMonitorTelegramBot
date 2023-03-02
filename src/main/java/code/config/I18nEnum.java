@@ -21,9 +21,15 @@ public enum I18nEnum {
     ExitEditMode("exit_edit_mode"),
     UnknownError("unknown_error"),
     NothingAtAll("nothing_at_all"),
+    CancelSucceed("cancel_succeed"),
+    Confirm("confirm"),
+    Cancel("cancel"),
+    Delete("delete"),
 
     LanguageList("language_list"),
     ChangeLanguageFinish("change_language_finish"),
+
+    MonitorExists("monitor_exists"),
 
     CreateMonitor1("create_monitor_1"),
     CreateMonitor2("create_monitor_2"),
@@ -45,6 +51,9 @@ public enum I18nEnum {
     UpdateMonitor4("update_monitor_4"),
     UpdateFieldError("update_field_error"),
     UpdateMonitorFinish("update_monitor_finish"),
+
+    DeleteMonitorConfirm("delete_monitor_confirm"),
+    DeleteMonitorFinish("delete_monitor_finish"),
 
     ;
 

@@ -51,9 +51,15 @@ bot admin主要作用是设置成只有你才能触发命令
 * interval_minute -> 监控间隔(分钟)
 * chatIdArray -> 需要发送的Chat Id列表
 
+监控部分属性说明
+* webPagePreview -> 消息web预览
+* notification -> 通知开关
+* zeroDelay -> 零延迟监控开关， 不受间隔时间限制
+
 你需要在机器人聊天界面发送对应命令去执行管理监控计划， 命令如下：
 * /language
 * /cmd create \<monitor name>
+* /cmd delete \<monitor name>
 * /cmd list
 * /cmd get \<monitor name>
 * /cmd update \<monitor name>

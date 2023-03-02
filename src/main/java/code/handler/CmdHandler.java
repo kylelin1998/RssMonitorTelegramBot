@@ -45,12 +45,19 @@ public class CmdHandler {
                 String argument1 = arguments[1].toLowerCase();
                 if (argument1.equals("update")) {
                     Handler.updateMonitorHandle(false, chatId, message.getMessageId(), arguments[2]);
+                } else if (argument1.equals("delete")) {
+                    Handler.DeleteStepsHandler.step(chatId, arguments[2]);
                 }
             }
         } else if (argument.equals("language")) {
             if (argument.length() > 1) {
                 String argument1 = arguments[1];
                 Handler.changeLanguageHandle(chatId, argument1);
+            }
+        } else if (argument.equals("delete")) {
+            if (argument.length() > 1) {
+                String argument1 = arguments[1];
+                Handler.DeleteStepsHandler.init(chatId, argument1);
             }
         }
 

@@ -4,6 +4,7 @@ import code.config.I18nEnum;
 import code.handler.CmdHandler;
 import code.handler.Handler;
 import code.handler.I18nHandle;
+import code.handler.MessageHandle;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -27,7 +28,7 @@ public class LanguageCommand extends BotCommand {
     public void execute(AbsSender absSender, Message message, String[] arguments) {
         String chatId = message.getChat().getId().toString();
         if (!chatId.equals(GlobalConfig.getBotAdminId())) {
-            Handler.sendMessageWithTryCatch(chatId, I18nHandle.getText(chatId, I18nEnum.InvalidCommand), false);
+            MessageHandle.sendMessage(chatId, I18nHandle.getText(chatId, I18nEnum.InvalidCommand), false);
             return;
         }
 

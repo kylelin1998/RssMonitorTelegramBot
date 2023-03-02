@@ -1,8 +1,11 @@
 package code.handler;
 
 import code.util.ExceptionUtil;
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -17,7 +20,7 @@ import java.util.List;
 import static code.Main.Bot;
 
 @Slf4j
-public class MessageHandler {
+public class MessageHandle {
 
     public static Message sendInlineKeyboard(String chatId, String text, InlineKeyboardButton... inlineKeyboardButtonList) {
         return sendInlineKeyboard(chatId, text, Arrays.asList(inlineKeyboardButtonList));
@@ -65,6 +68,50 @@ public class MessageHandler {
             return Bot.execute(message);
         } catch (TelegramApiException e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return null;
+    }
+
+    public static Message sendMessage(String chatId, String text, boolean webPagePreview) {
+        return sendMessage(chatId, null, text, webPagePreview, true);
+    }
+    public static Message sendMessage(String chatId, String text, boolean webPagePreview, boolean notification) {
+        return sendMessage(chatId, null, text, webPagePreview, notification);
+    }
+    public static Message sendMessage(String chatId, Integer replyToMessageId, String text, boolean webPagePreview) {
+        return sendMessage(chatId, replyToMessageId, text, webPagePreview, true);
+    }
+    public static Message sendMessage(String chatId, Integer replyToMessageId, String text, boolean webPagePreview, boolean notification) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setReplyToMessageId(replyToMessageId);
+        sendMessage.setText(text);
+        sendMessage.setParseMode(ParseMode.HTML);
+        if (!notification) {
+            sendMessage.disableNotification();
+        }
+        if (!webPagePreview) {
+            sendMessage.disableWebPagePreview();
+        }
+        return sendMessage(sendMessage);
+    }
+
+    public static Message sendMessage(SendMessage sendMessage) {
+        try {
+            Message execute = Bot.execute(sendMessage);
+            return execute;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(JSON.toJSONString(sendMessage), e));
+        }
+        return null;
+    }
+
+    public static Boolean deleteMessage(DeleteMessage deleteMessage) {
+        try {
+            Boolean execute = Bot.execute(deleteMessage);
+            return execute;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(JSON.toJSONString(deleteMessage), e));
         }
         return null;
     }

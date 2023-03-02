@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class Config {
@@ -23,6 +25,8 @@ public class Config {
 
     public static String DBPath = CurrentDir + "/db.db";
 
+    private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
+
     static {
         File file = new File(CurrentDir);
         if (!file.exists()) {
@@ -32,6 +36,8 @@ public class Config {
         if (!mf.exists()) {
             mf.mkdirs();
         }
+
+        readMonitorConfigList();
     }
 
     public synchronized static ConfigSettings readConfig() {
@@ -53,7 +59,17 @@ public class Config {
         return new ConfigSettings();
     }
 
+    private static List<MonitorConfigSettings> readMonitorConfigListByCaches() {
+        if (monitorConfigSettingsCaches.size() == 0) {
+            return null;
+        }
+        return new ArrayList<>(monitorConfigSettingsCaches.values());
+    }
+
     public synchronized static List<MonitorConfigSettings> readMonitorConfigList() {
+        List<MonitorConfigSettings> monitorConfigSettings = readMonitorConfigListByCaches();
+        if (null != monitorConfigSettings) return monitorConfigSettings;
+
         List<MonitorConfigSettings> list = new ArrayList<>();
         File file = new File(MonitorDir);
         file.list((File dir, String name) -> {
@@ -66,7 +82,11 @@ public class Config {
                     if (null == configSettings.getNotification()) {
                         configSettings.setNotification(true);
                     }
+                    if (null == configSettings.getZeroDelay()) {
+                        configSettings.setZeroDelay(false);
+                    }
                     list.add(configSettings);
+                    monitorConfigSettingsCaches.put(configSettings.getFileBasename(), configSettings);
                 }
             } catch (IOException e) {
                 log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
@@ -76,20 +96,26 @@ public class Config {
         return list;
     }
 
+    public static boolean hasMonitorConfig(String fileBasename) {
+        if (monitorConfigSettingsCaches.size() > 0) {
+            return monitorConfigSettingsCaches.containsKey(fileBasename);
+        }
+
+        return null != readMonitorConfig(fileBasename);
+    }
+
     public synchronized static MonitorConfigSettings readMonitorConfig(String fileBasename) {
         try {
-            File file = new File(MonitorDir + "/" + fileBasename + ".json");
-            if (!file.exists() || !file.isFile()) return null;
-
-            String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-
-            MonitorConfigSettings configSettings = JSON.parseObject(text, MonitorConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
-            configSettings.setFilename(fileBasename + ".json");
-            if (null == configSettings.getNotification()) {
-                configSettings.setNotification(true);
+            MonitorConfigSettings monitorConfigSettings = monitorConfigSettingsCaches.get(fileBasename);
+            if (null == monitorConfigSettings) {
+                List<MonitorConfigSettings> monitorConfigSettingsList = readMonitorConfigList();
+                for (MonitorConfigSettings configSettings : monitorConfigSettingsList) {
+                    if (configSettings.getFileBasename().equals(fileBasename)) {
+                        return configSettings;
+                    }
+                }
             }
-
-            return configSettings;
+            return monitorConfigSettings;
         } catch (Exception e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
         }
@@ -100,6 +126,7 @@ public class Config {
         try {
             File file = new File(MonitorDir + "/" + configSettings.getFilename());
             FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
+            monitorConfigSettingsCaches.put(configSettings.getFileBasename(), configSettings);
             return true;
         } catch (IOException e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
@@ -107,15 +134,23 @@ public class Config {
         return false;
     }
 
-    public synchronized static boolean saveConfig(ConfigSettings configSettings) {
-        try {
-            File file = new File(SettingsPath);
-            FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
-            return true;
-        } catch (IOException e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+    public synchronized static void deleteMonitorConfig(MonitorConfigSettings configSettings) {
+        File file = new File(MonitorDir + "/" + configSettings.getFilename());
+        if (file.exists()) {
+            file.delete();
         }
-        return false;
+        monitorConfigSettingsCaches.remove(configSettings.getFileBasename());
     }
+
+//    public synchronized static boolean saveConfig(ConfigSettings configSettings) {
+//        try {
+//            File file = new File(SettingsPath);
+//            FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
+//            return true;
+//        } catch (IOException e) {
+//            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+//        }
+//        return false;
+//    }
 
 }
