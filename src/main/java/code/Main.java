@@ -10,6 +10,7 @@ import code.handler.I18nHandle;
 import code.handler.MessageHandle;
 import code.repository.*;
 import code.util.ExceptionUtil;
+import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -23,6 +24,10 @@ public class Main {
     public static code.repository.I18nTableRepository I18nTableRepository = new I18nTableRepository();
 
     public static void main(String[] args) {
+        Unirest
+                .config()
+                .enableCookieManagement(false);
+
         new Thread(() -> {
             while (true) {
                 try {

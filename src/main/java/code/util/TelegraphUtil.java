@@ -9,12 +9,12 @@ import kong.unirest.MultipartBody;
 import kong.unirest.Unirest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +49,7 @@ public class TelegraphUtil {
                 return saveResponse;
             }
 
-            for (int i = 0;  i < 2; i++) {
+            for (int i = 0;  i < 3; i++) {
                 MultipartBody multipartBody = Unirest.post("https://edit.telegra.ph/save")
                         .header("origin", " https://telegra.ph")
                         .header("referer", " https://telegra.ph/")
@@ -73,6 +73,10 @@ public class TelegraphUtil {
                     saveResponse.setPageId(path);
                     saveResponse.setUrl("https://telegra.ph/" + path);
                     return saveResponse;
+                }
+                String errorDetails = jsonObject.getString("error_details");
+                if (StringUtils.isNotBlank(errorDetails) && "PATH_NUM_NOT_FOUND".equals(errorDetails)) {
+                    title = title + "-r" + RandomUtils.nextInt(1, 999);
                 }
             }
         } catch (Exception e) {
