@@ -33,7 +33,7 @@ public class Config {
     static {
         InputStream is = Config.class.getResourceAsStream("telegraph.html");
 
-        TelegraphHtml = new BufferedReader(new InputStreamReader(is))
+        TelegraphHtml = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
                 .lines()
                 .collect(Collectors.joining("\n"));
 

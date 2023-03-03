@@ -39,7 +39,7 @@ public class TelegraphUtil {
         private String url;
     }
 
-    public static SaveResponse save(RequestProxyConfig proxyConfig, String title, String author, String html, String appendHtml) throws FileNotFoundException {
+    public static SaveResponse save(RequestProxyConfig proxyConfig, String title, String author, String html, String appendHtml) {
         SaveResponse saveResponse = new SaveResponse();
         saveResponse.setOk(false);
         try {
@@ -49,29 +49,31 @@ public class TelegraphUtil {
                 return saveResponse;
             }
 
-            MultipartBody multipartBody = Unirest.post("https://edit.telegra.ph/save")
-                    .header("origin", " https://telegra.ph")
-                    .header("referer", " https://telegra.ph/")
-                    .header("user-agent", " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
-                    .field("Data", new ByteArrayInputStream(telegraphContent.getBytes(StandardCharsets.UTF_8)), ContentType.create("text/html", StandardCharsets.UTF_8), "content.html")
-                    .field("title", title)
-                    .field("author", StringUtils.isBlank(author) ? "Unknown" : author)
-                    .field("page_id", "0")
-                    .connectTimeout((int) TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS))
-                    .socketTimeout((int) TimeUnit.MILLISECONDS.convert(40, TimeUnit.SECONDS))
-                    ;
-            proxyConfig.viaProxy(multipartBody);
-            HttpResponse<String> response = multipartBody.asString();
+            for (int i = 0;  i < 2; i++) {
+                MultipartBody multipartBody = Unirest.post("https://edit.telegra.ph/save")
+                        .header("origin", " https://telegra.ph")
+                        .header("referer", " https://telegra.ph/")
+                        .header("user-agent", " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+                        .field("Data", new ByteArrayInputStream(telegraphContent.getBytes(StandardCharsets.UTF_8)), ContentType.create("text/html", StandardCharsets.UTF_8), "content.html")
+                        .field("title", title)
+                        .field("author", StringUtils.isBlank(author) ? "Unknown" : author)
+                        .field("page_id", "0")
+                        .connectTimeout((int) TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS))
+                        .socketTimeout((int) TimeUnit.MILLISECONDS.convert(40, TimeUnit.SECONDS))
+                        ;
+                proxyConfig.viaProxy(multipartBody);
+                HttpResponse<String> response = multipartBody.asString();
 
-            String body = response.getBody();
-            log.info("title: {}, response: {}", title, body);
-            JSONObject jsonObject = JSON.parseObject(body);
-            String path = jsonObject.getString("path");
-            if (StringUtils.isNotBlank(path)) {
-                saveResponse.setOk(true);
-                saveResponse.setPageId(path);
-                saveResponse.setUrl("https://telegra.ph/" + path);
-                return saveResponse;
+                String body = response.getBody();
+                log.info("title: {}, response: {}", title, body);
+                JSONObject jsonObject = JSON.parseObject(body);
+                String path = jsonObject.getString("path");
+                if (StringUtils.isNotBlank(path)) {
+                    saveResponse.setOk(true);
+                    saveResponse.setPageId(path);
+                    saveResponse.setUrl("https://telegra.ph/" + path);
+                    return saveResponse;
+                }
             }
         } catch (Exception e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
