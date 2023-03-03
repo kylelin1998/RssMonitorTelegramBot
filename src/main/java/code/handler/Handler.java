@@ -476,7 +476,7 @@ public class Handler {
 
     private static String replaceTelegraphHtml(String link, String title) {
         String s = StringUtils.replace(Config.TelegraphHtml, "${link}", link);
-        return s = StringUtils.replace(s, "${title}", title);
+        return StringUtils.replace(s, "${title}", title);
     }
 
     public static void showLanguageListHandle(String chatId) {

@@ -6,14 +6,15 @@ import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Config {
@@ -30,11 +31,11 @@ public class Config {
     private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
 
     static {
-        try {
-            TelegraphHtml = FileUtils.readFileToString(new File(Config.class.getResource("telegraph.html").getFile()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        InputStream is = Config.class.getResourceAsStream("telegraph.html");
+
+        TelegraphHtml = new BufferedReader(new InputStreamReader(is))
+                .lines()
+                .collect(Collectors.joining("\n"));
 
         File file = new File(CurrentDir);
         if (!file.exists()) {
