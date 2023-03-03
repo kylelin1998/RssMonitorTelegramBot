@@ -10,6 +10,8 @@ Send messages of an up-to-date article to your set-up Telegram channel,  group, 
 
 Support custom message content to your decision.
 
+Support RSS article auto sync to Telegraph platform.
+
 ## Install & Deploy
 Dockerfile and Jar file to save the same directory for building docker image.
 ```
@@ -73,12 +75,15 @@ Support custom message content
 * ${link} -> Article website URL
 * ${title} -> Article title
 * ${author} -> Article author
+* ${telegraph} -> Telegraph URL
 
 For example, automatically replace the variable:
 ```
 ${title}
 
-${link}
+Telegraph： ${telegraph}
+
+Original article： ${link}
 ```
 
 ![3fdb60f99c4cb66084eea0a8116b7342d96a1039.png](https://openimg.kylelin1998.com/img/3fdb60f99c4cb66084eea0a8116b7342d96a1039.png)
