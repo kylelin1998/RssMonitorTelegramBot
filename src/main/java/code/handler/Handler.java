@@ -4,6 +4,8 @@ import code.config.*;
 import code.handler.steps.StepsHandler;
 import code.util.ExceptionUtil;
 import code.util.RssUtil;
+import code.util.TelegraphUtil;
+import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndPerson;
@@ -421,16 +423,48 @@ public class Handler {
                 System.out.println(entry.getTitle());
                 s = StringUtils.replace(s, "${title}", entry.getTitle());
             }
+            String author = entry.getAuthor();
+            if (StringUtils.isBlank(author)) {
+                author = feed.getAuthor();
+            }
+            if (StringUtils.isBlank(author)) {
+                List<SyndPerson> authors = feed.getAuthors();
+                author = authors.size() > 0 ? authors.get(0).getName() : "";
+            }
             if (template.contains("${author}")) {
-                String author = entry.getAuthor();
-                if (StringUtils.isBlank(author)) {
-                    author = feed.getAuthor();
-                }
-                if (StringUtils.isBlank(author)) {
-                    List<SyndPerson> authors = feed.getAuthors();
-                    author = authors.size() > 0 ? authors.get(0).getName() : "";
-                }
                 s = StringUtils.replace(s, "${author}", author);
+            }
+            if (template.contains("${telegraph}")) {
+                String html = null;
+
+                List<SyndContent> contents = entry.getContents();
+                if (contents.size() > 0) {
+                    String value = contents.get(0).getValue();
+                    if (StringUtils.isNotBlank(value)) {
+                        html = value;
+                    }
+                }
+
+                if (StringUtils.isBlank(html)) {
+                    SyndContent description = entry.getDescription();
+                    if (null != description) {
+                        String value = description.getValue();
+                        if (StringUtils.isNotBlank(value)) {
+                            html = value;
+                        }
+                    }
+                }
+
+                if (StringUtils.isNotBlank(html)) {
+                    String telegraphHtml = replaceTelegraphHtml(entry.getLink(), entry.getTitle());
+
+                    TelegraphUtil.SaveResponse response = TelegraphUtil.save(RequestProxyConfig.create(), entry.getTitle(), author, html, telegraphHtml);
+                    if (response.isOk()) {
+                        s = StringUtils.replace(s, "${telegraph}", response.getUrl());
+                    } else {
+                        s = StringUtils.replace(s, "${telegraph}", "");
+                    }
+                }
             }
 
             return s;
@@ -438,6 +472,11 @@ public class Handler {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
         }
         return null;
+    }
+
+    private static String replaceTelegraphHtml(String link, String title) {
+        String s = StringUtils.replace(Config.TelegraphHtml, "${link}", link);
+        return s = StringUtils.replace(s, "${title}", title);
     }
 
     public static void showLanguageListHandle(String chatId) {

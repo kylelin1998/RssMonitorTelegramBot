@@ -18,16 +18,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class Config {
 
-    public static String CurrentDir = System.getProperty("user.dir") + "/config";
-    public static String MonitorDir = System.getProperty("user.dir") + "/config/monitor";
+    public static final String CurrentDir = System.getProperty("user.dir") + "/config";
+    public static final String MonitorDir = System.getProperty("user.dir") + "/config/monitor";
 
-    public static String SettingsPath = CurrentDir + "/config.json";
+    public static final String SettingsPath = CurrentDir + "/config.json";
 
-    public static String DBPath = CurrentDir + "/db.db";
+    public static final String DBPath = CurrentDir + "/db.db";
+
+    public static String TelegraphHtml;
 
     private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
 
     static {
+        try {
+            TelegraphHtml = FileUtils.readFileToString(new File(Config.class.getResource("telegraph.html").getFile()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         File file = new File(CurrentDir);
         if (!file.exists()) {
             file.mkdirs();

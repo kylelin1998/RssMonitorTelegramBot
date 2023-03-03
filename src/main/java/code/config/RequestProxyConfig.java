@@ -1,7 +1,6 @@
 package code.config;
 
-import org.apache.hc.client5.http.fluent.Request;
-import org.apache.hc.core5.http.HttpHost;
+import kong.unirest.HttpRequest;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 
 import static code.Main.GlobalConfig;
@@ -24,10 +23,10 @@ public class RequestProxyConfig {
         return config;
     }
 
-    public void viaProxy(Request request) {
+    public void viaProxy(HttpRequest request) {
         switch (this.type) {
             case HttpProxy:
-                request.viaProxy(new HttpHost(this.hostName, this.port));
+                request.proxy(this.hostName, this.port);
                 break;
         }
     }
