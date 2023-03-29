@@ -1,8 +1,6 @@
 package code.commands;
 
 import code.config.I18nEnum;
-import code.handler.CmdHandler;
-import code.handler.Handler;
 import code.handler.I18nHandle;
 import code.handler.MessageHandle;
 import lombok.extern.slf4j.Slf4j;
@@ -12,12 +10,11 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
-import static code.Main.GlobalConfig;
-
 @Slf4j
-public class CmdCommand extends BotCommand {
-    public CmdCommand() {
-        super("cmd", "");
+public class HelpCommand extends BotCommand {
+
+    public HelpCommand() {
+        super("help", "");
     }
 
     @Override
@@ -27,16 +24,11 @@ public class CmdCommand extends BotCommand {
 
     public void execute(AbsSender absSender, Message message, String[] arguments) {
         String chatId = message.getChat().getId().toString();
-        if (!chatId.equals(GlobalConfig.getBotAdminId())) {
-            MessageHandle.sendMessage(chatId, I18nHandle.getText(chatId, I18nEnum.InvalidCommand), false);
-            return;
-        }
-
-        CmdHandler.handle(chatId, message, arguments);
+        String fromId = String.valueOf(message.getFrom().getId());
+        MessageHandle.sendMessage(chatId, I18nHandle.getText(fromId, I18nEnum.HelpText), false);
     }
 
     @Override
     public void execute(AbsSender absSender, User user, Chat chat, String[] strings) {
-
     }
 }

@@ -11,8 +11,8 @@ public class ConfigSettings {
     public String proxyHost;
     public Integer proxyPort;
 
-    public String botAdminUsername;
     public String botAdminId;
+    private String[] permissionChatIdArray;
 
     public String botName;
     public String botToken;

@@ -12,58 +12,71 @@ Support custom message content to your decision.
 
 Support RSS article auto sync to Telegraph platform.
 
-## Install & Deploy
-Dockerfile and Jar file to save the same directory for building docker image.
-```
-docker build -t rssb .
-```
-You need to build logs, config directory on your personal server.
+## Deploy
+The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
 
-Then, Need to create a file named config.json in config directory.
+### Prepare
+
+To start, create a folder named whatever you prefer on your server.
+
+Then create another folder named config and the config folder must contains a json file named config.json in, then transfer rss-monitor-for-telegram-universal.jar, run.sh and Dockerfile to the folder.
+
+### config.json
 ```
-docker run --name rssb -d -v /var/project/RssMonitorBot/logs:/logs -v /var/project/RssMonitorBot/rss-monitor-for-telegram-universal.jar:/app.jar -v /var/project/RssMonitorBot/config:/config  --restart=always rssb
-```
-## About
-My Telegram: <https://t.me/KyleLin1998>
-
-My Telegram Channel(Software, if have a new version, will be in this channel to notify everyone. Welcome to subscribe to it.): <https://t.me/KyleLin1998Channel>
-
-My email: email@kylelin1998.com
-
-## Usage
-config.json for example:
-```json
 {
   "on_proxy": false,
   "proxy_host": "127.0.0.1",
   "proxy_port": 7890,
-  "bot_admin_username": "xxxx",
   "bot_admin_id": "xxxx",
   "bot_name": "xxx",
   "bot_token": "xxx",
   "interval_minute": 10,
-  "chatIdArray": ["xxxxx"]
+  "chatIdArray": [
+    "xxxxx"
+  ],
+  "permission_chat_id_array": [
+    "xxxx"
+  ]
 }
 ```
-Bot Admin mainly means only you can trigger command to manage monitor plans
-* bot_admin_username -> Bot admins username
-* bot_admin_id -> Bot admins chat id
-* bot_name -> Bot username
-* bot_token -> Bot Token
-* interval_minute -> Monitor interval(Minute)
-* chatIdArray -> Send to chat id list
+```
+on proxy -> Whether to open proxy
+bot admin id -> Bot's admin, the id is chat id of Telegram.
+bot name, 和 bot token -> @BotFather has given bot name,  bot token
+permission chat id array -> Allow using the bot.
+```
 
-You need to send commands in the chat interface of the bot to manage monitor plans, command for example:
-* /language
-* /cmd create \<monitor name>
-* /cmd delete \<monitor name>
-* /cmd list
-* /cmd get \<monitor name>
-* /cmd update \<monitor name>
-* /cmd on \<monitor name>
-* /cmd off \<monitor name>
-* /cmd test \<monitor name>
-* /cmd exit
+### First step:
+Build a docker image for use.
+```
+docker build -t rssb .
+```
+
+### Second step:
+Run the docker image of just then build.
+```
+docker run --name rssb -d -v $(pwd):/app --restart=always rssb
+```
+
+## About
+My telegram: https://t.me/KyleLin1998
+
+My telegram channel: https://t.me/KyleLin1998Channel
+
+My email: email@kylelin1998.com
+
+## Usage
+**Commands:**
+```
+create - Create plan
+list - Plan list
+exit - Exit
+language - Change language
+restart - Restart the bot
+upgrade - Upgrade the bot
+help - Help
+```
+
 
 Monitor config description
 * webPagePreview -> Web page preview

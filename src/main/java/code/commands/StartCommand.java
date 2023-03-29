@@ -1,8 +1,8 @@
 package code.commands;
 
-import code.handler.Command;
-import code.handler.StepsCenter;
-import code.handler.steps.StepsChatSessionBuilder;
+import code.config.I18nEnum;
+import code.handler.I18nHandle;
+import code.handler.MessageHandle;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -11,9 +11,10 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
 @Slf4j
-public class LanguageCommand extends BotCommand {
-    public LanguageCommand() {
-        super(Command.Language.getCmd(), "");
+public class StartCommand extends BotCommand {
+
+    public StartCommand() {
+        super("start", "");
     }
 
     @Override
@@ -22,7 +23,9 @@ public class LanguageCommand extends BotCommand {
     }
 
     public void execute(AbsSender absSender, Message message, String[] arguments) {
-        StepsCenter.cmdHandle(Command.Language, StepsChatSessionBuilder.create(message).setText(arguments).build());
+        String chatId = message.getChat().getId().toString();
+        String fromId = String.valueOf(message.getFrom().getId());
+        MessageHandle.sendMessage(chatId, I18nHandle.getText(fromId, I18nEnum.HelpText), false);
     }
 
     @Override

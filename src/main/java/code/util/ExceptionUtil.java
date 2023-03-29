@@ -6,7 +6,7 @@ import java.io.StringWriter;
 
 public class ExceptionUtil {
 
-    public static String getStackTraceWithCustomInfoToStr(String description, Exception e) {
+    public static String getStackTraceWithCustomInfoToStr(Exception e, String description) {
         return String.format("description: %s, class name: %s, stacktrace: %s", description, e.getClass().getName(), getStackTraceToStr(e));
     }
 

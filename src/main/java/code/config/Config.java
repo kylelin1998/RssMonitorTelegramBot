@@ -6,7 +6,6 @@ import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +29,14 @@ public class Config {
 
     private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
 
+    public final static class MetaData {
+        public final static String CurrentVersion = "1.0.20";
+        public final static String GitOwner = "kylelin1998";
+        public final static String GitRepo = "RssMonitorTelegramBot";
+        public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
+        public final static String JarName = "rss-monitor-for-telegram.jar";
+    }
+
     static {
         InputStream is = Config.class.getResourceAsStream("telegraph.html");
 
@@ -49,7 +56,7 @@ public class Config {
         readMonitorConfigList();
     }
 
-    public synchronized static ConfigSettings readConfig() {
+    public static ConfigSettings readConfig() {
         try {
             File file = new File(SettingsPath);
             boolean exists = file.exists();
@@ -59,6 +66,9 @@ public class Config {
                 Boolean debug = configSettings.getDebug();
                 if (null == debug) {
                     configSettings.setDebug(false);
+                }
+                if (null == configSettings.getPermissionChatIdArray()) {
+                    configSettings.setPermissionChatIdArray(new String[] {});
                 }
                 return configSettings;
             }

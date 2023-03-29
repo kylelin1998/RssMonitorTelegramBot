@@ -11,9 +11,9 @@ import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 
 @Slf4j
-public class LanguageCommand extends BotCommand {
-    public LanguageCommand() {
-        super(Command.Language.getCmd(), "");
+public class RestartCommand extends BotCommand {
+    public RestartCommand() {
+        super(Command.Restart.getCmd(), "");
     }
 
     @Override
@@ -22,7 +22,7 @@ public class LanguageCommand extends BotCommand {
     }
 
     public void execute(AbsSender absSender, Message message, String[] arguments) {
-        StepsCenter.cmdHandle(Command.Language, StepsChatSessionBuilder.create(message).setText(arguments).build());
+        StepsCenter.cmdHandle(Command.Restart, StepsChatSessionBuilder.create(message).setText(arguments).build());
     }
 
     @Override

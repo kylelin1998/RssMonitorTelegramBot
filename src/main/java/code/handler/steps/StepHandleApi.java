@@ -1,9 +1,10 @@
 package code.handler.steps;
 
 import java.util.List;
+import java.util.Map;
 
 public interface StepHandleApi {
 
-    boolean execute(String chatId, Integer replyToMessageId, String text, int index, List<String> list);
+    StepResult execute(StepsChatSession stepsChatSession, int index, List<String> list, Map<String, Object> context);
 
 }

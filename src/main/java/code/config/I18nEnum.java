@@ -6,26 +6,30 @@ import lombok.Getter;
 public enum I18nEnum {
 
     BotStartSucceed("bot_start_succeed"),
+    HelpText("help_text"),
 
     InvalidCommand("invalid_command"),
     MonitorList("monitor_list"),
     NothingHere("nothing_here"),
+
     On("on"),
     Off("off"),
     Test("test"),
     Update("update"),
     NotFound("not_found"),
-    NotFoundMonitor("not_found_monitor"),
-    OnMonitor("on_monitor"),
-    OffMonitor("off_monitor"),
-    ExitEditMode("exit_edit_mode"),
     UnknownError("unknown_error"),
     NothingAtAll("nothing_at_all"),
-    CancelSucceed("cancel_succeed"),
+    CancelSucceeded("cancel_succeeded"),
     Confirm("confirm"),
     Cancel("cancel"),
     Delete("delete"),
     Finish("finish"),
+    ExitSucceeded("exit_succeeded"),
+    Getting("getting"),
+    Downloading("downloading"),
+
+    OnMonitor("on_monitor"),
+    OffMonitor("off_monitor"),
 
     LanguageList("language_list"),
     ChangeLanguageFinish("change_language_finish"),
@@ -65,6 +69,17 @@ public enum I18nEnum {
     ConfigDisplayTemplate("config_display_template"),
     ConfigDisplayChatIdArray("config_display_chat_id_array"),
     ConfigDisplayFileBasename("config_display_file_basename"),
+
+    YouAreNotAnAdmin("you_are_not_an_admin"),
+    AreYouSureToRestartRightNow("are_you_sure_to_restart_right_now"),
+    Restarting("restarting"),
+    GettingUpdateData("getting_update_data"),
+    AreYouSureToUpgradeThisBotRightNow("are_you_sure_to_upgrade_this_bot_right_now"),
+    TargetVersion("target_version"),
+    CurrentVersion("current_version"),
+    UpdateLogs("update_logs"),
+    Updating("updating"),
+    Downloaded("downloaded"),
 
     ;
 
