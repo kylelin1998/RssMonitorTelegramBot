@@ -27,6 +27,7 @@ public enum I18nEnum {
     ExitSucceeded("exit_succeeded"),
     Getting("getting"),
     Downloading("downloading"),
+    ForceRecord("force_record"),
 
     OnMonitor("on_monitor"),
     OffMonitor("off_monitor"),
@@ -49,6 +50,7 @@ public enum I18nEnum {
 
 
     TestMonitor("test_monitor"),
+    ForceRecordSucceeded("force_record_succeeded"),
 
 
     UpdateMonitor1("update_monitor_1"),

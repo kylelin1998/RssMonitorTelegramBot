@@ -10,10 +10,10 @@ public enum Command {
     Get("get"),
     Update("update"),
     Test("test"),
+    ForceRecord("force_record"),
     On("on"),
     Off("off"),
     Delete("delete"),
-
 
     Exit("exit"),
     Language("language"),

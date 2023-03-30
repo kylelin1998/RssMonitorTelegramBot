@@ -36,7 +36,7 @@ public class Handler {
                 try {
                     for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
                         if (!configSettings.getZeroDelay()) {
-                            rssMessageHandle(null, configSettings, false);
+                            rssMessageHandle(null, configSettings, false, false);
                         }
                     }
 
@@ -54,7 +54,7 @@ public class Handler {
                     for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
                         if (configSettings.getZeroDelay()) {
                             isWait = false;
-                            rssMessageHandle(null, configSettings, false);
+                            rssMessageHandle(null, configSettings, false, false);
                         }
                     }
 
@@ -134,7 +134,7 @@ public class Handler {
 
                     showMonitorHandle(session, name);
                     MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitorFinish), false);
-                    rssMessageHandle(session, settings, true);
+                    rssMessageHandle(session, settings, true, false);
 
                     return StepResult.ok();
                 })
@@ -424,7 +424,31 @@ public class Handler {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.TestMonitor, session.getText()), false);
                         return StepResult.end();
                     }
-                    rssMessageHandle(session, settings, true);
+                    rssMessageHandle(session, settings, true, false);
+
+                    return StepResult.end();
+                })
+                .build();
+
+        // Force Record
+        StepsBuilder
+                .create()
+                .bindCommand(Command.ForceRecord)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+
+                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    if (null == settings) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.TestMonitor, session.getText()), false);
+                        return StepResult.end();
+                    }
+                    rssMessageHandle(session, settings, false, true);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.ForceRecordSucceeded, session.getText()), false);
 
                     return StepResult.end();
                 })
@@ -614,6 +638,10 @@ public class Handler {
             inlineKeyboardButton3.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Test));
             inlineKeyboardButton3.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Test, settings.getFileBasename()));
 
+            InlineKeyboardButton inlineKeyboardButton6 = new InlineKeyboardButton();
+            inlineKeyboardButton6.setText(I18nHandle.getText(session.getFromId(), I18nEnum.ForceRecord));
+            inlineKeyboardButton6.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.ForceRecord, settings.getFileBasename()));
+
             InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
             inlineKeyboardButton4.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Update));
             inlineKeyboardButton4.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Update, settings.getFileBasename()));
@@ -622,7 +650,7 @@ public class Handler {
             inlineKeyboardButton5.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Delete));
             inlineKeyboardButton5.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Delete, settings.getFileBasename()));
 
-            MessageHandle.sendInlineKeyboard(session.getChatId(), getMonitorData(session, settings), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton4, inlineKeyboardButton5);
+            MessageHandle.sendInlineKeyboard(session.getChatId(), getMonitorData(session, settings), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton6, inlineKeyboardButton4, inlineKeyboardButton5);
         } else {
             MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
         }
@@ -640,7 +668,6 @@ public class Handler {
 
                 InlineKeyboardButton button = new InlineKeyboardButton();
                 button.setText(settings.getFileBasename());
-                System.out.println(StepsCenter.buildCallbackData(true, session, Command.Get, settings.getFileBasename()).length());
                 button.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Get, settings.getFileBasename()));
                 inlineKeyboardButtons.add(button);
             }
@@ -651,7 +678,7 @@ public class Handler {
         }
     }
 
-    private static void rssMessageHandle(StepsChatSession session, MonitorConfigSettings configSettings, boolean isTest) {
+    private static void rssMessageHandle(StepsChatSession session, MonitorConfigSettings configSettings, boolean isTest, boolean forceRecord) {
         try {
             Boolean on = configSettings.getOn();
             String fileBasename = configSettings.getFileBasename();
@@ -666,7 +693,7 @@ public class Handler {
                     if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
-                if (!SentRecordTableRepository.selectExistByMonitorName(fileBasename)) {
+                if (!SentRecordTableRepository.selectExistByMonitorName(fileBasename) || forceRecord) {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
                         String linkMd5 = DigestUtils.md5Hex(entry.getLink());
