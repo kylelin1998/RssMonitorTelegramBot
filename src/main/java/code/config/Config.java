@@ -31,7 +31,7 @@ public class Config {
     private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.20";
+        public final static String CurrentVersion = "1.0.22";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
