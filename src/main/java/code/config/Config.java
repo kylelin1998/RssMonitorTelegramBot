@@ -34,7 +34,7 @@ public class Config {
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
-        public final static String JarName = "rss-monitor-for-telegram.jar";
+        public final static String JarName = "rss-monitor-for-telegram-universal.jar";
     }
 
     static {
