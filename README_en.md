@@ -77,13 +77,12 @@ upgrade - Upgrade the bot
 help - Help
 ```
 
-
 Monitor config description
 * webPagePreview -> Web page preview
 * notification -> Notification switch
 * zeroDelay -> Zero delays to monitor
 
-template:
+Template content:
 Support custom message content
 * ${link} -> Article website URL
 * ${title} -> Article title
