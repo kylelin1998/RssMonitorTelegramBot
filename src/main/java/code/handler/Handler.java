@@ -37,7 +37,7 @@ public class Handler {
                 try {
                     for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
                         if (!configSettings.getZeroDelay()) {
-                            rssMessageHandle(configSettings, false);
+                            rssMessageHandle(null, configSettings, false);
                         }
                     }
 
@@ -421,7 +421,7 @@ public class Handler {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.TestMonitor, session.getText()), false);
                         return StepResult.end();
                     }
-                    rssMessageHandle(settings, true);
+                    rssMessageHandle(session, settings, true);
 
                     return StepResult.end();
                 })
@@ -647,19 +647,19 @@ public class Handler {
         }
     }
 
-    private static void rssMessageHandle(MonitorConfigSettings configSettings, boolean isTest) {
+    private static void rssMessageHandle(StepsChatSession session, MonitorConfigSettings configSettings, boolean isTest) {
         try {
             Boolean on = configSettings.getOn();
             String fileBasename = configSettings.getFileBasename();
             if ((null != on && on) || isTest) {
                 SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), configSettings.getUrl());
                 if (null == feed) {
-                    if (isTest) MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.CreateMonitor5), false);
+                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
                     return;
                 }
                 List<SyndEntry> entries = feed.getEntries();
                 if (null == entries || entries.isEmpty()) {
-                    if (isTest) MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), I18nHandle.getText(GlobalConfig.getBotAdminId(), I18nEnum.NothingAtAll), false);
+                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
                 if (!SentRecordTableRepository.selectExistByMonitorName(fileBasename)) {
@@ -694,7 +694,7 @@ public class Handler {
                                 Config.saveMonitorConfig(configSettings);
                             }
                         } else {
-                            MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), text, configSettings.getWebPagePreview(), configSettings.getNotification());
+                            MessageHandle.sendMessage(session.getChatId(), text, configSettings.getWebPagePreview(), configSettings.getNotification());
                             if (i >= 2) {
                                 break;
                             }
