@@ -36,6 +36,7 @@ public enum I18nEnum {
 
     MonitorExists("monitor_exists"),
 
+    CreateNameTooLong("create_name_too_long"),
     CreateMonitor1("create_monitor_1"),
     CreateMonitor2("create_monitor_2"),
     CreateMonitor3("create_monitor_3"),

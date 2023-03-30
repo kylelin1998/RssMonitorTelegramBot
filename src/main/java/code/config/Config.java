@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -98,6 +99,7 @@ public class Config {
                     String text = FileUtils.readFileToString(monitorFile, StandardCharsets.UTF_8);
                     MonitorConfigSettings configSettings = JSON.parseObject(text, MonitorConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
                     configSettings.setFilename(name);
+                    configSettings.setFileBasename(StringUtils.removeEnd(name, ".json"));
                     if (null == configSettings.getNotification()) {
                         configSettings.setNotification(true);
                     }

@@ -15,7 +15,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -87,6 +86,10 @@ public class Handler {
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     if (Config.hasMonitorConfig(session.getText())) {
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.MonitorExists), false);
+                        return StepResult.reject();
+                    }
+                    if (session.getText().length() > 8) {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateNameTooLong), false);
                         return StepResult.reject();
                     }
 
@@ -637,6 +640,7 @@ public class Handler {
 
                 InlineKeyboardButton button = new InlineKeyboardButton();
                 button.setText(settings.getFileBasename());
+                System.out.println(StepsCenter.buildCallbackData(true, session, Command.Get, settings.getFileBasename()).length());
                 button.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Get, settings.getFileBasename()));
                 inlineKeyboardButtons.add(button);
             }
