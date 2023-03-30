@@ -10,7 +10,7 @@ public enum Command {
     Get("get"),
     Update("update"),
     Test("test"),
-    ForceRecord("force_record"),
+    ForceRecord("fr"),
     On("on"),
     Off("off"),
     Delete("delete"),
