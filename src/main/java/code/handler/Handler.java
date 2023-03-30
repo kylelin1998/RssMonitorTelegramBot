@@ -55,7 +55,7 @@ public class Handler {
                     for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
                         if (configSettings.getZeroDelay()) {
                             isWait = false;
-                            rssMessageHandle(configSettings, false);
+                            rssMessageHandle(null, configSettings, false);
                         }
                     }
 
@@ -131,7 +131,7 @@ public class Handler {
 
                     showMonitorHandle(session, name);
                     MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitorFinish), false);
-                    rssMessageHandle(settings, true);
+                    rssMessageHandle(session, settings, true);
 
                     return StepResult.ok();
                 })
