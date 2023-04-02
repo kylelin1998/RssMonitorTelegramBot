@@ -22,6 +22,7 @@ RSS监控最新文章， 如果有监控到最新文章会通知到您设置好�
 ### config.json
 ```json
 {
+  "debug": false,
   "on_proxy": false,
   "proxy_host": "127.0.0.1",
   "proxy_port": 7890,

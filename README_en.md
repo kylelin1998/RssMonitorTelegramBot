@@ -24,6 +24,7 @@ Then create another folder named config and the config folder must contains a js
 ### config.json
 ```
 {
+  "debug": false,
   "on_proxy": false,
   "proxy_host": "127.0.0.1",
   "proxy_port": 7890,
