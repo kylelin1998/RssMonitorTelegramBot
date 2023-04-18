@@ -11,6 +11,10 @@ RSS监控最新文章， 如果有监控到最新文章会通知到您设置好�
 支持RSS同步到Telegraph
 
 ## 部署
+Youtube：https://youtu.be/CiDxb1ESijQ
+
+哔哩哔哩： https://www.bilibili.com/video/BV1Ts4y1S7bn/
+
 机器人的部署步骤是基于 Docker 的，其机器人升级功能也基于 Docker，因此请使用 Docker 进行部署，以防出现错误
 
 首先，在您的服务器上创建一个文件夹
