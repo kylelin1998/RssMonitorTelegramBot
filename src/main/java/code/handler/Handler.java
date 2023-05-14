@@ -3,6 +3,7 @@ package code.handler;
 import code.config.*;
 import code.eneity.MonitorTableEntity;
 import code.eneity.PageEntity;
+import code.eneity.SentRecordTableEntity;
 import code.eneity.YesOrNoEnum;
 import code.handler.message.CallbackBuilder;
 import code.handler.message.InlineKeyboardButtonListBuilder;
@@ -712,7 +713,7 @@ public class Handler {
         try {
             Boolean on = YesOrNoEnum.toBoolean(entity.getEnable()).get();
             String name = entity.getName();
-            if ((null != on && on) || isTest) {
+            if ((null != on && on) || isTest || forceRecord) {
                 SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), entity.getUrl());
                 if (null == feed) {
                     if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
@@ -723,11 +724,16 @@ public class Handler {
                     if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
-                if (!SentRecordTableRepository.selectExistByMonitorName(name) || forceRecord) {
+                if (!SentRecordTableRepository.exists(name, entity.getChatId()) || forceRecord) {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
                         String linkMd5 = DigestUtils.md5Hex(entry.getLink());
-                        SentRecordTableRepository.insert(linkMd5, name);
+                        SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
+                        sentRecordTableEntity.setId(linkMd5);
+                        sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
+                        sentRecordTableEntity.setName(name);
+                        sentRecordTableEntity.setChatId(entity.getChatId());
+                        SentRecordTableRepository.save(sentRecordTableEntity);
                     }
                 }
 
@@ -736,7 +742,7 @@ public class Handler {
                     SyndEntry entry = entries.get(i);
                     String linkMd5 = DigestUtils.md5Hex(entry.getLink());
 
-                    if (SentRecordTableRepository.selectExistByIdAndMonitorName(linkMd5, name) && !isTest) continue;
+                    if (SentRecordTableRepository.exists(linkMd5, name, entity.getChatId()) && !isTest) continue;
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
@@ -750,7 +756,12 @@ public class Handler {
                             }
 
                             if (GlobalConfig.getChatIdArray().length > 0) {
-                                SentRecordTableRepository.insert(linkMd5, name);
+                                SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
+                                sentRecordTableEntity.setId(linkMd5);
+                                sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
+                                sentRecordTableEntity.setName(name);
+                                sentRecordTableEntity.setChatId(entity.getChatId());
+                                SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
                             MessageHandle.sendMessage(session.getChatId(), text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get());

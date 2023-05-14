@@ -1,55 +1,39 @@
 package code.repository;
 
 import code.config.Config;
-import code.config.TableEnum;
+import code.eneity.SentRecordTableEntity;
 import code.repository.mapper.TableRepository;
-import code.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.ResultSet;
-
 @Slf4j
-public class SentRecordTableRepository extends TableRepository {
+public class SentRecordTableRepository extends TableRepository<SentRecordTableEntity> {
 
     public SentRecordTableRepository() {
-        super(Config.DBPath, TableEnum.SentRecordTable.getName());
+        super(Config.DBPath);
     }
 
-    @Override
-    public String getCreateTableSql() {
-        return String.format("create table if not exists %s (id varchar(255), monitor_name varchar(88), create_time timestamp)", super.getTableName());
-    }
-
-    public Boolean selectExistByMonitorName(String monitorName) {
-        return super.exist("monitor_name", monitorName);
-    }
-    public Boolean selectExistByIdAndMonitorName(String id, String monitorName) {
-        try {
-            Integer total = (int) execute((statement) -> {
-                String sql = String.format("select count(*) as total from %s where id = '%s' and monitor_name = '%s'", super.getTableName(), id, monitorName);
-                ResultSet query = statement.executeQuery(sql);
-                return query.getInt("total");
-            });
-            if (null == total) return null;
-            return total > 0;
-        } catch (Exception e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+    public void save(SentRecordTableEntity entity) {
+        SentRecordTableEntity where = new SentRecordTableEntity();
+        where.setId(entity.getId());
+        Integer count = super.selectCount(where);
+        if (count == 0) {
+            super.insert(entity);
         }
-        return null;
     }
 
-    public boolean insert(String id, String monitorName) {
-        String sql = String.format("insert into %s values('%s', '%s', %s)", super.getTableName(), id, monitorName, System.currentTimeMillis());
-        try {
-            execute((statement) -> {
-                statement.executeUpdate(sql);
-                return null;
-            });
-            return true;
-        } catch (Exception e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-            return false;
+    public Boolean exists(String name, String chatId) {
+        return exists(null, name, chatId);
+    }
+    public Boolean exists(String id, String name, String chatId) {
+        SentRecordTableEntity where = new SentRecordTableEntity();
+        where.setId(id);
+        where.setName(name);
+        where.setChatId(chatId);
+        Integer count = super.selectCount(where);
+        if (null == count) {
+            return null;
         }
+        return count > 0;
     }
 
 }
