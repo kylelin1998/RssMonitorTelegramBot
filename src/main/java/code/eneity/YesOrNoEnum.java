@@ -17,6 +17,7 @@ public enum YesOrNoEnum {
 
     YesOrNoEnum(int num, boolean bool) {
         this.num = num;
+        this.bool = bool;
     }
 
     public static int toInt(boolean bool) {
