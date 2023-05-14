@@ -6,6 +6,7 @@ import code.eneity.PageEntity;
 import code.eneity.SentRecordTableEntity;
 import code.eneity.YesOrNoEnum;
 import code.handler.message.CallbackBuilder;
+import code.handler.message.InlineKeyboardButtonBuilder;
 import code.handler.message.InlineKeyboardButtonListBuilder;
 import code.handler.steps.StepResult;
 import code.handler.steps.StepsBuilder;
@@ -641,31 +642,32 @@ public class Handler {
     private static void showMonitorHandle(StepsChatSession session, String id) {
         MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
         if (null != settings) {
-            InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
-            inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.On));
-            inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()));
+            List<List<InlineKeyboardButton>> build = InlineKeyboardButtonListBuilder
+                    .create()
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.On), CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Off), CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()))
+                                    .build()
+                    )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Test), CallbackBuilder.buildCallbackData(true, session, Command.Test, settings.getId()))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.ForceRecord), CallbackBuilder.buildCallbackData(true, session, Command.ForceRecord, settings.getId()))
+                                    .build()
+                    )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Update), CallbackBuilder.buildCallbackData(true, session, Command.Update, settings.getId()))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Delete), CallbackBuilder.buildCallbackData(true, session, Command.Delete, settings.getId()))
+                                    .build()
+                    )
+                    .build();
 
-            InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
-            inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Off));
-            inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()));
-
-            InlineKeyboardButton inlineKeyboardButton3 = new InlineKeyboardButton();
-            inlineKeyboardButton3.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Test));
-            inlineKeyboardButton3.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Test, settings.getId()));
-
-            InlineKeyboardButton inlineKeyboardButton6 = new InlineKeyboardButton();
-            inlineKeyboardButton6.setText(I18nHandle.getText(session.getFromId(), I18nEnum.ForceRecord));
-            inlineKeyboardButton6.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.ForceRecord, settings.getId()));
-
-            InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
-            inlineKeyboardButton4.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Update));
-            inlineKeyboardButton4.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Update, settings.getId()));
-
-            InlineKeyboardButton inlineKeyboardButton5 = new InlineKeyboardButton();
-            inlineKeyboardButton5.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Delete));
-            inlineKeyboardButton5.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Delete, settings.getId()));
-
-            MessageHandle.sendInlineKeyboard(session.getChatId(), getMonitorData(session, settings), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton6, inlineKeyboardButton4, inlineKeyboardButton5);
+            MessageHandle.sendInlineKeyboardList(session.getChatId(), getMonitorData(session, settings), build);
         } else {
             MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
         }

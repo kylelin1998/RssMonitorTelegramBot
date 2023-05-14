@@ -16,7 +16,6 @@ public class SentRecordTableEntity implements TableEntity {
     @TableField(name = "chat_id", sql = "chat_id varchar(100)")
     private String chatId;
 
-    @DisplayConfigAnnotation(i18n = "config_display_zero_delay", set = false)
     @TableField(name = "name", sql = "name varchar(50)")
     private String name;
 
