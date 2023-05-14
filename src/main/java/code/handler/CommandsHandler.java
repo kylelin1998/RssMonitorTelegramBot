@@ -1,6 +1,7 @@
 package code.handler;
 
 import code.commands.*;
+import code.handler.message.CallbackBuilder;
 import code.handler.steps.StepsChatSession;
 import code.handler.steps.StepsChatSessionBuilder;
 import com.alibaba.fastjson2.JSON;
@@ -28,13 +29,6 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
     }
 
     public void start() {
-        register(new CreateCommand());
-        register(new ListCommand());
-
-        register(new RestartCommand());
-        register(new UpgradeCommand());
-        register(new ExitCommand());
-        register(new LanguageCommand());
         register(new HelpCommand());
         register(new StartCommand());
     }
@@ -58,7 +52,7 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         if (null != callbackQuery) {
             String data = callbackQuery.getData();
-            StepsCenter.CallbackData callbackData = StepsCenter.parseCallbackData(data);
+            CallbackBuilder.CallbackData callbackData = CallbackBuilder.parseCallbackData(data);
             if (null == callbackData) {
                 MessageHandle.sendMessage(String.valueOf(callbackQuery.getMessage().getChatId()), "Error...", false);
                 return;

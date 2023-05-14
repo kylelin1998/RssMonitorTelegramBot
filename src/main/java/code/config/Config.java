@@ -1,20 +1,20 @@
 package code.config;
 
+import code.eneity.MonitorTableEntity;
+import code.eneity.YesOrNoEnum;
 import code.util.ExceptionUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONReader;
-import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.stream.Collectors;
+
+import static code.Main.*;
 
 @Slf4j
 public class Config {
@@ -28,10 +28,8 @@ public class Config {
 
     public static String TelegraphHtml;
 
-    private static Map<String, MonitorConfigSettings> monitorConfigSettingsCaches = new ConcurrentHashMap<>();
-
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.22";
+        public final static String CurrentVersion = "1.0.40";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -53,8 +51,6 @@ public class Config {
         if (!mf.exists()) {
             mf.mkdirs();
         }
-
-        readMonitorConfigList();
     }
 
     public static ConfigSettings readConfig() {
@@ -79,18 +75,7 @@ public class Config {
         return new ConfigSettings();
     }
 
-    private static List<MonitorConfigSettings> readMonitorConfigListByCaches() {
-        if (monitorConfigSettingsCaches.size() == 0) {
-            return null;
-        }
-        return new ArrayList<>(monitorConfigSettingsCaches.values());
-    }
-
-    public synchronized static List<MonitorConfigSettings> readMonitorConfigList() {
-        List<MonitorConfigSettings> monitorConfigSettings = readMonitorConfigListByCaches();
-        if (null != monitorConfigSettings) return monitorConfigSettings;
-
-        List<MonitorConfigSettings> list = new ArrayList<>();
+    public synchronized static void oldDataConvert() {
         File file = new File(MonitorDir);
         file.list((File dir, String name) -> {
             File monitorFile = new File(dir, name);
@@ -106,61 +91,28 @@ public class Config {
                     if (null == configSettings.getZeroDelay()) {
                         configSettings.setZeroDelay(false);
                     }
-                    list.add(configSettings);
-                    monitorConfigSettingsCaches.put(configSettings.getFileBasename(), configSettings);
+
+                    MonitorTableEntity monitorTableEntity = new MonitorTableEntity();
+                    monitorTableEntity.setId(Snowflake.nextIdToStr());
+                    monitorTableEntity.setChatId(GlobalConfig.botAdminId);
+                    monitorTableEntity.setEnable(YesOrNoEnum.toInt(configSettings.getOn()));
+                    monitorTableEntity.setName(configSettings.getFileBasename());
+                    monitorTableEntity.setNotification(YesOrNoEnum.toInt(configSettings.getNotification()));
+                    monitorTableEntity.setUrl(configSettings.getUrl());
+                    monitorTableEntity.setTemplate(configSettings.getTemplate());
+                    monitorTableEntity.setZeroDelay(YesOrNoEnum.toInt(configSettings.getZeroDelay()));
+                    monitorTableEntity.setCreateTime(System.currentTimeMillis());
+                    monitorTableEntity.setChatIdArrayJson(JSON.toJSONString(configSettings.getChatIdArray()));
+                    monitorTableEntity.setWebPagePreview(YesOrNoEnum.toInt(configSettings.getWebPagePreview()));
+                    MonitorTableRepository.insert(monitorTableEntity);
+
+                    monitorFile.delete();
                 }
             } catch (IOException e) {
                 log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
             }
             return true;
         });
-        return list;
-    }
-
-    public static boolean hasMonitorConfig(String fileBasename) {
-        if (monitorConfigSettingsCaches.size() > 0) {
-            return monitorConfigSettingsCaches.containsKey(fileBasename);
-        }
-
-        return null != readMonitorConfig(fileBasename);
-    }
-
-    public synchronized static MonitorConfigSettings readMonitorConfig(String fileBasename) {
-        try {
-            MonitorConfigSettings monitorConfigSettings = monitorConfigSettingsCaches.get(fileBasename);
-            if (null == monitorConfigSettings) {
-                List<MonitorConfigSettings> monitorConfigSettingsList = readMonitorConfigList();
-                for (MonitorConfigSettings configSettings : monitorConfigSettingsList) {
-                    if (configSettings.getFileBasename().equals(fileBasename)) {
-                        return configSettings;
-                    }
-                }
-            }
-            return monitorConfigSettings;
-        } catch (Exception e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-        }
-        return null;
-    }
-
-    public synchronized static boolean saveMonitorConfig(MonitorConfigSettings configSettings) {
-        try {
-            File file = new File(MonitorDir + "/" + configSettings.getFilename());
-            FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
-            monitorConfigSettingsCaches.put(configSettings.getFileBasename(), configSettings);
-            return true;
-        } catch (IOException e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-        }
-        return false;
-    }
-
-    public synchronized static void deleteMonitorConfig(MonitorConfigSettings configSettings) {
-        File file = new File(MonitorDir + "/" + configSettings.getFilename());
-        if (file.exists()) {
-            file.delete();
-        }
-        monitorConfigSettingsCaches.remove(configSettings.getFileBasename());
     }
 
 //    public synchronized static boolean saveConfig(ConfigSettings configSettings) {

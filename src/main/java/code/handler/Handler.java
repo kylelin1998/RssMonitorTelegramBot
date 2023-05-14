@@ -1,18 +1,24 @@
 package code.handler;
 
 import code.config.*;
+import code.eneity.MonitorTableEntity;
+import code.eneity.PageEntity;
+import code.eneity.YesOrNoEnum;
+import code.handler.message.CallbackBuilder;
+import code.handler.message.InlineKeyboardButtonListBuilder;
 import code.handler.steps.StepResult;
 import code.handler.steps.StepsBuilder;
 import code.handler.steps.StepsChatSession;
 import code.util.*;
+import com.alibaba.fastjson2.JSON;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndPerson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -34,9 +40,9 @@ public class Handler {
         new Thread(() -> {
             while (true) {
                 try {
-                    for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
-                        if (!configSettings.getZeroDelay()) {
-                            rssMessageHandle(null, configSettings, false, false);
+                    for (MonitorTableEntity entity : MonitorTableRepository.selectList()) {
+                        if (!YesOrNoEnum.toBoolean(entity.getZeroDelay()).get()) {
+                            rssMessageHandle(null, entity, false, false);
                         }
                     }
 
@@ -51,10 +57,10 @@ public class Handler {
             while (true) {
                 try {
                     boolean isWait = true;
-                    for (MonitorConfigSettings configSettings : Config.readMonitorConfigList()) {
-                        if (configSettings.getZeroDelay()) {
+                    for (MonitorTableEntity entity : MonitorTableRepository.selectList()) {
+                        if (YesOrNoEnum.toBoolean(entity.getZeroDelay()).get()) {
                             isWait = false;
-                            rssMessageHandle(null, configSettings, false, false);
+                            rssMessageHandle(null, entity, false, false);
                         }
                     }
 
@@ -84,12 +90,13 @@ public class Handler {
                     return StepResult.ok();
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
-                    if (Config.hasMonitorConfig(session.getText())) {
-                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.MonitorExists), false);
+                    if (session.getText().length() > 50) {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateNameTooLong), false);
                         return StepResult.reject();
                     }
-                    if (session.getText().length() > 8) {
-                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateNameTooLong), false);
+                    Integer count = MonitorTableRepository.selectCountByName(session.getFromId(), session.getText());
+                    if (count > 0) {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.MonitorExists), false);
                         return StepResult.reject();
                     }
 
@@ -119,20 +126,24 @@ public class Handler {
                     String name = (String) context.get("name");
                     String url = (String) context.get("url");
 
-                    // save to file
-                    MonitorConfigSettings settings = new MonitorConfigSettings();
-                    settings.setFileBasename(name);
-                    settings.setFilename(name + ".json");
-                    settings.setTemplate(session.getText());
-                    settings.setOn(false);
-                    settings.setUrl(url);
-                    settings.setWebPagePreview(true);
-                    settings.setChatIdArray(new String[]{});
-                    settings.setNotification(true);
-                    settings.setZeroDelay(false);
-                    Config.saveMonitorConfig(settings);
+                    String id = Snowflake.nextIdToStr();
 
-                    showMonitorHandle(session, name);
+                    MonitorTableEntity settings = new MonitorTableEntity();
+                    settings.setId(id);
+                    settings.setCreateTime(System.currentTimeMillis());
+                    settings.setChatId(session.getFromId());
+                    settings.setName(name);
+                    settings.setTemplate(session.getText());
+                    settings.setEnable(YesOrNoEnum.No.getNum());
+                    settings.setUrl(url);
+                    settings.setWebPagePreview(YesOrNoEnum.Yes.getNum());
+                    settings.setChatIdArrayJson(JSON.toJSONString(new ArrayList<String>()));
+                    settings.setNotification(YesOrNoEnum.Yes.getNum());
+                    settings.setZeroDelay(YesOrNoEnum.No.getNum());
+
+                    MonitorTableRepository.insert(settings);
+
+                    showMonitorHandle(session, id);
                     MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitorFinish), false);
                     rssMessageHandle(session, settings, true, false);
 
@@ -150,7 +161,7 @@ public class Handler {
                     MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
                 })
                 .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
-                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
                     if (null == settings) {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound, session.getText()), false);
                         return StepResult.end();
@@ -162,7 +173,7 @@ public class Handler {
                         if (null != annotation && annotation.set()) {
                             InlineKeyboardButton row = new InlineKeyboardButton();
                             row.setText(I18nHandle.getText(session.getFromId(), annotation.i18n()));
-                            row.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Update, field.getName()));
+                            row.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Update, field.getName()));
 
                             inlineKeyboardButtonArrayList.add(row);
                         }
@@ -170,14 +181,14 @@ public class Handler {
 
                     MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor1), inlineKeyboardButtonArrayList);
 
-                    context.put("name", session.getText());
+                    context.put("id", session.getText());
 
                     return StepResult.ok();
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
-                    String name = (String) context.get("name");
+                    String id = (String) context.get("id");
 
-                    MonitorConfigSettings settings = Config.readMonitorConfig(name);
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
                     Field[] declaredFields = settings.getClass().getDeclaredFields();
                     Field field = null;
                     for (Field declaredField : declaredFields) {
@@ -198,15 +209,15 @@ public class Handler {
 
                     MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor3, session.getText()), false);
 
-                    Class<?> type = field.getType();
-                    if (type == Boolean.class) {
+                    if (session.getText().equals("notification") || session.getText().equals("enable")
+                            || session.getText().equals("webPagePreview") || session.getText().equals("zeroDelay")) {
                         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
                         inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.On));
-                        inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Update, "true"));
+                        inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Update, String.valueOf(YesOrNoEnum.Yes.getNum())));
 
                         InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
                         inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Off));
-                        inlineKeyboardButton2.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Update, "false"));
+                        inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Update, String.valueOf(YesOrNoEnum.No.getNum())));
 
                         MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), inlineKeyboardButton, inlineKeyboardButton2);
                         return StepResult.ok();
@@ -216,11 +227,11 @@ public class Handler {
 
                     return StepResult.ok();
                 }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
-                    String name = (String) context.get("name");
+                    String id = (String) context.get("id");
                     String fieldName = (String) context.get("field");
 
                     try {
-                        MonitorConfigSettings settings = Config.readMonitorConfig(name);
+                        MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
                         Field[] declaredFields = settings.getClass().getDeclaredFields();
                         Field field = null;
                         for (Field declaredField : declaredFields) {
@@ -237,31 +248,34 @@ public class Handler {
                             return StepResult.reject();
                         }
 
-                        field.setAccessible(true);
-                        if (field.getType() == String[].class) {
-                            ArrayList<String> arrayList = new ArrayList<>();
-                            for (String s : session.getText().split(" ")) {
-                                if (StringUtils.isNotBlank(s)) {
-                                    arrayList.add(s);
-                                }
+                        if (fieldName.equals("zeroDelay")) {
+                            settings.setZeroDelay(YesOrNoEnum.get(Integer.valueOf(session.getText())).get().getNum());
+                        } else if (fieldName.equals("webPagePreview")) {
+                            settings.setWebPagePreview(YesOrNoEnum.get(Integer.valueOf(session.getText())).get().getNum());
+                        } else if (fieldName.equals("enable")) {
+                            settings.setEnable(YesOrNoEnum.get(Integer.valueOf(session.getText())).get().getNum());
+                        } else if (fieldName.equals("notification")) {
+                            settings.setNotification(YesOrNoEnum.get(Integer.valueOf(session.getText())).get().getNum());
+                        } else if (fieldName.equals("chatIdArrayJson")) {
+                            String[] s = StringUtils.split(session.getText(), " ");
+                            if (s.length == 0) {
+                                MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFieldError), false);
+                                return StepResult.reject();
                             }
-
-
-                            field.set(settings, arrayList.toArray(new String[0]));
-                        } else {
-                            if (session.getText().equals("true") || session.getText().equals("false")) {
-                                field.set(settings, Boolean.valueOf(session.getText()));
-                            } else {
-                                field.set(settings, session.getText());
-                            }
+                            settings.setChatIdArrayJson(JSON.toJSONString(s));
+                        } else if (fieldName.equals("template")) {
+                            settings.setTemplate(session.getText());
+                        } else if (fieldName.equals("url")) {
+                            settings.setUrl(session.getText());
                         }
 
-                        Config.saveMonitorConfig(settings);
+                        settings.setUpdateTime(System.currentTimeMillis());
+                        MonitorTableRepository.update(settings);
 
-                        showMonitorHandle(session, name);
+                        showMonitorHandle(session, id);
 
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitorFinish), false);
-                    } catch (IllegalAccessException | IllegalArgumentException e) {
+                    } catch (IllegalArgumentException e) {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFieldError), false);
                         return StepResult.reject();
                     }
@@ -282,11 +296,11 @@ public class Handler {
                 .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
                     inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm));
-                    inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Delete, session.getText()));
+                    inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Delete, session.getText()));
 
                     InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
                     inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
-                    inlineKeyboardButton2.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Delete, ""));
+                    inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Delete, ""));
 
                     MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorConfirm), inlineKeyboardButton, inlineKeyboardButton2);
 
@@ -294,9 +308,9 @@ public class Handler {
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     if (StringUtils.isNotBlank(session.getText())) {
-                        MonitorConfigSettings monitorConfigSettings = Config.readMonitorConfig(list.get(0));
-                        if (null != monitorConfigSettings) {
-                            Config.deleteMonitorConfig(monitorConfigSettings);
+                        MonitorTableEntity entity = MonitorTableRepository.selectOne(list.get(0), session.getFromId());
+                        if (null != entity) {
+                            MonitorTableRepository.delete(entity.getId());
                         }
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorFinish), false);
 
@@ -371,10 +385,10 @@ public class Handler {
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
 
-                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
                     if (null != settings) {
-                        settings.setOn(true);
-                        Config.saveMonitorConfig(settings);
+                        settings.setEnable(YesOrNoEnum.Yes.getNum());
+                        MonitorTableRepository.update(settings);
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.OnMonitor), false);
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
@@ -395,10 +409,10 @@ public class Handler {
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
 
-                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
                     if (null != settings) {
-                        settings.setOn(false);
-                        Config.saveMonitorConfig(settings);
+                        settings.setEnable(YesOrNoEnum.No.getNum());
+                        MonitorTableRepository.update(settings);
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.OffMonitor), false);
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
@@ -419,7 +433,7 @@ public class Handler {
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
 
-                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
                     if (null == settings) {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.TestMonitor, session.getText()), false);
                         return StepResult.end();
@@ -441,7 +455,7 @@ public class Handler {
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
 
-                    MonitorConfigSettings settings = Config.readMonitorConfig(session.getText());
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
                     if (null == settings) {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.TestMonitor, session.getText()), false);
                         return StepResult.end();
@@ -468,7 +482,7 @@ public class Handler {
                     for (I18nLocaleEnum value : I18nLocaleEnum.values()) {
                         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
                         inlineKeyboardButton.setText(value.getDisplayText());
-                        inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Language, value.getAlias()));
+                        inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Language, value.getAlias()));
 
                         inlineKeyboardButtons.add(inlineKeyboardButton);
                     }
@@ -505,11 +519,11 @@ public class Handler {
 
                     InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
                     inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm));
-                    inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Restart, "true"));
+                    inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Restart, "true"));
 
                     InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
                     inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
-                    inlineKeyboardButton2.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Restart, "false"));
+                    inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Restart, "false"));
 
                     MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureToRestartRightNow), inlineKeyboardButton, inlineKeyboardButton2);
 
@@ -560,11 +574,11 @@ public class Handler {
 
                         InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
                         inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm));
-                        inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Upgrade, "true"));
+                        inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Upgrade, "true"));
 
                         InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
                         inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
-                        inlineKeyboardButton2.setCallbackData(StepsCenter.buildCallbackData(false, session, Command.Upgrade, "false"));
+                        inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Upgrade, "false"));
 
                         MessageHandle.sendInlineKeyboard(session.getChatId(), builder.toString(), inlineKeyboardButton, inlineKeyboardButton2);
 
@@ -623,32 +637,32 @@ public class Handler {
 
     }
 
-    private static void showMonitorHandle(StepsChatSession session, String fileBasename) {
-        MonitorConfigSettings settings = Config.readMonitorConfig(fileBasename);
+    private static void showMonitorHandle(StepsChatSession session, String id) {
+        MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
         if (null != settings) {
             InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
             inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.On));
-            inlineKeyboardButton.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.On, settings.getFileBasename()));
+            inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()));
 
             InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
             inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Off));
-            inlineKeyboardButton2.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Off, settings.getFileBasename()));
+            inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()));
 
             InlineKeyboardButton inlineKeyboardButton3 = new InlineKeyboardButton();
             inlineKeyboardButton3.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Test));
-            inlineKeyboardButton3.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Test, settings.getFileBasename()));
+            inlineKeyboardButton3.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Test, settings.getId()));
 
             InlineKeyboardButton inlineKeyboardButton6 = new InlineKeyboardButton();
             inlineKeyboardButton6.setText(I18nHandle.getText(session.getFromId(), I18nEnum.ForceRecord));
-            inlineKeyboardButton6.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.ForceRecord, settings.getFileBasename()));
+            inlineKeyboardButton6.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.ForceRecord, settings.getId()));
 
             InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
             inlineKeyboardButton4.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Update));
-            inlineKeyboardButton4.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Update, settings.getFileBasename()));
+            inlineKeyboardButton4.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Update, settings.getId()));
 
             InlineKeyboardButton inlineKeyboardButton5 = new InlineKeyboardButton();
             inlineKeyboardButton5.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Delete));
-            inlineKeyboardButton5.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Delete, settings.getFileBasename()));
+            inlineKeyboardButton5.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Delete, settings.getId()));
 
             MessageHandle.sendInlineKeyboard(session.getChatId(), getMonitorData(session, settings), inlineKeyboardButton, inlineKeyboardButton2, inlineKeyboardButton3, inlineKeyboardButton6, inlineKeyboardButton4, inlineKeyboardButton5);
         } else {
@@ -657,33 +671,49 @@ public class Handler {
     }
 
     private static void showMonitorListHandle(StepsChatSession session) {
-        List<MonitorConfigSettings> monitorConfigSettingsList = Config.readMonitorConfigList();
-        if (monitorConfigSettingsList.size() > 0) {
+        MonitorTableEntity where = new MonitorTableEntity();
+        where.setChatId(session.getFromId());
+        PageEntity page = MonitorTableRepository.page(where, 5, NumberUtils.toInt(session.getText(), 1), "order by create_time desc");
+        if (!page.isHasNext() && page.getList().isEmpty()) {
+            page = MonitorTableRepository.page(where, 5, 1, "order by create_time desc");
+        }
+
+        List<MonitorTableEntity> entityList = page.getList();
+        if (entityList.size() > 0) {
             StringBuilder builder = new StringBuilder();
             ArrayList<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
 
-            for (MonitorConfigSettings settings : monitorConfigSettingsList) {
-                builder.append(I18nHandle.getText(session.getFromId(), I18nEnum.MonitorList, settings.getFileBasename(), settings.getOn()));
+            for (MonitorTableEntity settings : entityList) {
+                builder.append(I18nHandle.getText(session.getFromId(), I18nEnum.MonitorList, settings.getName(), getEnableDisplayI18nText(session.getFromId(), YesOrNoEnum.get(settings.getEnable()).get())));
                 builder.append("\n\n");
 
                 InlineKeyboardButton button = new InlineKeyboardButton();
-                button.setText(settings.getFileBasename());
-                button.setCallbackData(StepsCenter.buildCallbackData(true, session, Command.Get, settings.getFileBasename()));
+                button.setText(settings.getName());
+                button.setCallbackData(CallbackBuilder.buildCallbackData(true, session, Command.Get, settings.getId()));
                 inlineKeyboardButtons.add(button);
             }
 
-            MessageHandle.sendInlineKeyboard(session.getChatId(), builder.toString(), inlineKeyboardButtons);
+            List<List<InlineKeyboardButton>> build = InlineKeyboardButtonListBuilder
+                    .create()
+                    .add(inlineKeyboardButtons)
+                    .pagination(page, session, Command.List)
+                    .build();
+            if (null == session.getCallbackQuery()) {
+                MessageHandle.sendInlineKeyboardList(session.getChatId(), builder.toString(), build);
+            } else {
+                MessageHandle.updateInlineKeyboardList(session.getCallbackQuery().getMessage(), session.getChatId(), builder.toString(), build);
+            }
         } else {
             MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingHere), false);
         }
     }
 
-    private static void rssMessageHandle(StepsChatSession session, MonitorConfigSettings configSettings, boolean isTest, boolean forceRecord) {
+    private static void rssMessageHandle(StepsChatSession session, MonitorTableEntity entity, boolean isTest, boolean forceRecord) {
         try {
-            Boolean on = configSettings.getOn();
-            String fileBasename = configSettings.getFileBasename();
+            Boolean on = YesOrNoEnum.toBoolean(entity.getEnable()).get();
+            String name = entity.getName();
             if ((null != on && on) || isTest) {
-                SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), configSettings.getUrl());
+                SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), entity.getUrl());
                 if (null == feed) {
                     if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
                     return;
@@ -693,39 +723,37 @@ public class Handler {
                     if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
-                if (!SentRecordTableRepository.selectExistByMonitorName(fileBasename) || forceRecord) {
+                if (!SentRecordTableRepository.selectExistByMonitorName(name) || forceRecord) {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
                         String linkMd5 = DigestUtils.md5Hex(entry.getLink());
-                        SentRecordTableRepository.insert(linkMd5, fileBasename);
+                        SentRecordTableRepository.insert(linkMd5, name);
                     }
-                    Config.saveMonitorConfig(configSettings);
                 }
 
-                String template = configSettings.getTemplate();
+                String template = entity.getTemplate();
                 for (int i = 0; i < entries.size(); i++) {
                     SyndEntry entry = entries.get(i);
                     String linkMd5 = DigestUtils.md5Hex(entry.getLink());
 
-                    if (SentRecordTableRepository.selectExistByIdAndMonitorName(linkMd5, fileBasename) && !isTest) continue;
+                    if (SentRecordTableRepository.selectExistByIdAndMonitorName(linkMd5, name) && !isTest) continue;
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
                         if (!isTest) {
-                            String[] chatIdArray = configSettings.getChatIdArray();
-                            if (null == chatIdArray || chatIdArray.length == 0) {
-                                chatIdArray = GlobalConfig.getChatIdArray();
+                            List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
+                            if (null == chatIdArray || chatIdArray.isEmpty()) {
+                                chatIdArray = Arrays.asList(GlobalConfig.getChatIdArray());
                             }
                             for (String s : chatIdArray) {
-                                MessageHandle.sendMessage(s, text, configSettings.getWebPagePreview(), configSettings.getNotification());
+                                MessageHandle.sendMessage(s, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get());
                             }
 
                             if (GlobalConfig.getChatIdArray().length > 0) {
-                                SentRecordTableRepository.insert(linkMd5, fileBasename);
-                                Config.saveMonitorConfig(configSettings);
+                                SentRecordTableRepository.insert(linkMd5, name);
                             }
                         } else {
-                            MessageHandle.sendMessage(session.getChatId(), text, configSettings.getWebPagePreview(), configSettings.getNotification());
+                            MessageHandle.sendMessage(session.getChatId(), text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get());
                             if (i >= 2) {
                                 break;
                             }
@@ -810,10 +838,21 @@ public class Handler {
         return StringUtils.replace(s, "${title}", title);
     }
 
-    private static String getMonitorData(StepsChatSession session, MonitorConfigSettings monitorConfigSettings) {
+    private static String getEnableDisplayI18nText(String fromId, YesOrNoEnum yesOrNoEnum) {
+        switch (yesOrNoEnum) {
+            case Yes:
+                return I18nHandle.getText(fromId, I18nEnum.On);
+            case No:
+                return I18nHandle.getText(fromId, I18nEnum.Off);
+            default:
+                return "";
+        }
+    }
+
+    private static String getMonitorData(StepsChatSession session, MonitorTableEntity entity) {
         String chatIdArrayStr = "";
-        String[] chatIdArray = monitorConfigSettings.getChatIdArray();
-        if (ArrayUtils.isEmpty(chatIdArray)) {
+        List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
+        if (null == chatIdArray || chatIdArray.isEmpty()) {
             chatIdArrayStr = StringUtils.join(GlobalConfig.getChatIdArray(), " ");
         } else {
             chatIdArrayStr = StringUtils.join(chatIdArray, " ");
@@ -821,14 +860,14 @@ public class Handler {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayFileBasename), monitorConfigSettings.getFileBasename()));
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayOn), monitorConfigSettings.getOn()));
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayWebPagePreview), monitorConfigSettings.getWebPagePreview()));
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayNotification), monitorConfigSettings.getNotification()));
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayZeroDelay), monitorConfigSettings.getZeroDelay()));
-        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayUrl), monitorConfigSettings.getUrl()));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayFileBasename), entity.getName()));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayOn), getEnableDisplayI18nText(session.getFromId(), YesOrNoEnum.get(entity.getEnable()).get())));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayWebPagePreview), getEnableDisplayI18nText(session.getFromId(), YesOrNoEnum.get(entity.getWebPagePreview()).get())));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayNotification), getEnableDisplayI18nText(session.getFromId(), YesOrNoEnum.get(entity.getNotification()).get())));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayZeroDelay), getEnableDisplayI18nText(session.getFromId(), YesOrNoEnum.get(entity.getZeroDelay()).get())));
+        builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayUrl), entity.getUrl()));
         builder.append(String.format("%s: %s\n", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayChatIdArray), chatIdArrayStr));
-        builder.append(String.format("%s: \n%s", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayTemplate), monitorConfigSettings.getTemplate()));
+        builder.append(String.format("%s: \n%s", I18nHandle.getText(session.getFromId(), I18nEnum.ConfigDisplayTemplate), entity.getTemplate()));
 
         return builder.toString();
     }

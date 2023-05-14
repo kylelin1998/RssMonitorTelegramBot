@@ -1,11 +1,10 @@
 package code.handler;
 
 import code.config.ExecutorsConfig;
+import code.handler.message.CallbackBuilder;
 import code.handler.steps.StepsChatSession;
 import code.handler.steps.StepsHandler;
 import code.handler.steps.StepsRegisterCenter;
-import code.util.ExceptionUtil;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -17,43 +16,6 @@ import static code.Main.GlobalConfig;
 
 @Slf4j
 public class StepsCenter {
-
-    @Data
-    public static class CallbackData {
-        private boolean init;
-        private String id;
-        private Command command;
-        private String text;
-    }
-
-    public static String buildCallbackData(boolean init, StepsChatSession session, Command command, String text) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("f[" + session.getSessionId() + "]");
-        builder.append(command.getCmd());
-        builder.append(" ");
-        builder.append(init);
-        builder.append(" ");
-        builder.append(text);
-        return builder.toString();
-    }
-    public static CallbackData parseCallbackData(String callbackData) {
-        try {
-            CallbackData data = new CallbackData();
-            data.setId(StringUtils.substringBetween(callbackData, "f[", "]"));
-
-            String s = StringUtils.replace(callbackData, "f[" + data.getId() + "]", "");
-            String[] arguments = s.split(" ");
-
-            data.setCommand(Command.toCmd(arguments[0]));
-            data.setInit(Boolean.valueOf(arguments[1]));
-            data.setText(arguments.length > 2 ? arguments[2] : null);
-
-            return data;
-        } catch (Exception e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-        }
-        return null;
-    }
 
     public static boolean cmdHandle(StepsChatSession session) {
         if (StringUtils.isNotBlank(session.getText()) && session.getText().startsWith("/")) {
@@ -78,7 +40,7 @@ public class StepsCenter {
         return false;
     }
 
-    public static void cmdHandle(StepsCenter.CallbackData callbackData, StepsChatSession stepsChatSession) {
+    public static void cmdHandle(CallbackBuilder.CallbackData callbackData, StepsChatSession stepsChatSession) {
         cmdHandle(callbackData.getCommand(), true, stepsChatSession, callbackData);
     }
 
@@ -86,7 +48,7 @@ public class StepsCenter {
         cmdHandle(command, false, stepsChatSession, null);
     }
 
-    private static void cmdHandle(Command command, boolean isCall, StepsChatSession stepsChatSession, StepsCenter.CallbackData callbackData) {
+    private static void cmdHandle(Command command, boolean isCall, StepsChatSession stepsChatSession, CallbackBuilder.CallbackData callbackData) {
         boolean permission = false;
 
         String botAdminId = GlobalConfig.getBotAdminId();
