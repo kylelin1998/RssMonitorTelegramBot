@@ -29,7 +29,7 @@ public class Config {
     public static String TelegraphHtml;
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.40";
+        public final static String CurrentVersion = "1.0.30";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
