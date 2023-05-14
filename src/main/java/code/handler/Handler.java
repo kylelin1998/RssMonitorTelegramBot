@@ -312,6 +312,7 @@ public class Handler {
                     if (StringUtils.isNotBlank(session.getText())) {
                         MonitorTableEntity entity = MonitorTableRepository.selectOne(list.get(0), session.getFromId());
                         if (null != entity) {
+                            SentRecordTableRepository.delete(entity.getName(), entity.getChatId());
                             MonitorTableRepository.delete(entity.getId());
                         }
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorFinish), false);

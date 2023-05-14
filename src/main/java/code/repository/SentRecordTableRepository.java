@@ -21,6 +21,13 @@ public class SentRecordTableRepository extends TableRepository<SentRecordTableEn
         }
     }
 
+    public Boolean delete(String name, String chatId) {
+        SentRecordTableEntity where = new SentRecordTableEntity();
+        where.setChatId(chatId);
+        where.setName(name);
+        return super.delete(where);
+    }
+
     public Boolean exists(String name, String chatId) {
         return exists(null, name, chatId);
     }
