@@ -26,6 +26,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,7 +43,11 @@ public class Handler {
         new Thread(() -> {
             while (true) {
                 try {
-                    for (MonitorTableEntity entity : MonitorTableRepository.selectList()) {
+                    MonitorTableEntity where = new MonitorTableEntity();
+                    where.setZeroDelay(YesOrNoEnum.No.getNum());
+                    where.setEnable(YesOrNoEnum.Yes.getNum());
+                    List<MonitorTableEntity> list = MonitorTableRepository.selectList(where);
+                    for (MonitorTableEntity entity : list) {
                         if (!YesOrNoEnum.toBoolean(entity.getZeroDelay()).get()) {
                             rssMessageHandle(null, entity, false, false);
                         }
@@ -58,14 +63,34 @@ public class Handler {
         new Thread(() -> {
             while (true) {
                 try {
-                    boolean isWait = true;
-                    for (MonitorTableEntity entity : MonitorTableRepository.selectList()) {
-                        if (YesOrNoEnum.toBoolean(entity.getZeroDelay()).get()) {
-                            isWait = false;
-                            rssMessageHandle(null, entity, false, false);
-                        }
+                    long startMillis = System.currentTimeMillis();
+                    if (GlobalConfig.getDebug()) {
+                        log.info("Zero delay, start timestamp: {}", startMillis);
                     }
 
+                    boolean isWait = true;
+                    MonitorTableEntity where = new MonitorTableEntity();
+                    where.setZeroDelay(YesOrNoEnum.Yes.getNum());
+                    where.setEnable(YesOrNoEnum.Yes.getNum());
+                    List<MonitorTableEntity> list = MonitorTableRepository.selectList(where);
+                    CountDownLatch countDownLatch = new CountDownLatch(list.size());
+
+                    for (MonitorTableEntity entity : list) {
+                        isWait = false;
+                        MonitorExecutorsConfig.submit(() -> {
+                            try {
+                                rssMessageHandle(null, entity, false, false);
+                            } finally {
+                                countDownLatch.countDown();
+                            }
+                        });
+                    }
+                    countDownLatch.await();
+
+                    long endMillis = System.currentTimeMillis();
+                    if (GlobalConfig.getDebug()) {
+                        log.info("Zero delay, end timestamp: {}, total time: {}", endMillis, endMillis - startMillis);
+                    }
                     if (isWait) {
                         TimeUnit.MINUTES.sleep(2);
                     } else {
