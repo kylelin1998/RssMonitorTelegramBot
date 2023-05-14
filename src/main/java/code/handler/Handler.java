@@ -48,9 +48,7 @@ public class Handler {
                     where.setEnable(YesOrNoEnum.Yes.getNum());
                     List<MonitorTableEntity> list = MonitorTableRepository.selectList(where);
                     for (MonitorTableEntity entity : list) {
-                        if (!YesOrNoEnum.toBoolean(entity.getZeroDelay()).get()) {
-                            rssMessageHandle(null, entity, false, false);
-                        }
+                        rssMessageHandle(null, entity, false, false);
                     }
 
                     TimeUnit.MINUTES.sleep(GlobalConfig.getIntervalMinute());
