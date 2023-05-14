@@ -66,32 +66,30 @@ public class Handler {
                         log.info("Zero delay, start timestamp: {}", startMillis);
                     }
 
-                    boolean isWait = true;
                     MonitorTableEntity where = new MonitorTableEntity();
                     where.setZeroDelay(YesOrNoEnum.Yes.getNum());
                     where.setEnable(YesOrNoEnum.Yes.getNum());
                     List<MonitorTableEntity> list = MonitorTableRepository.selectList(where);
-                    CountDownLatch countDownLatch = new CountDownLatch(list.size());
-
-                    for (MonitorTableEntity entity : list) {
-                        isWait = false;
-                        MonitorExecutorsConfig.submit(() -> {
-                            try {
-                                rssMessageHandle(null, entity, false, false);
-                            } finally {
-                                countDownLatch.countDown();
-                            }
-                        });
-                    }
-                    countDownLatch.await();
-
-                    long endMillis = System.currentTimeMillis();
-                    if (GlobalConfig.getDebug()) {
-                        log.info("Zero delay, end timestamp: {}, total time: {}", endMillis, endMillis - startMillis);
-                    }
-                    if (isWait) {
+                    if (list.isEmpty()) {
                         TimeUnit.MINUTES.sleep(2);
                     } else {
+                        CountDownLatch countDownLatch = new CountDownLatch(list.size());
+
+                        for (MonitorTableEntity entity : list) {
+                            MonitorExecutorsConfig.submit(() -> {
+                                try {
+                                    rssMessageHandle(null, entity, false, false);
+                                } finally {
+                                    countDownLatch.countDown();
+                                }
+                            });
+                        }
+                        countDownLatch.await();
+
+                        long endMillis = System.currentTimeMillis();
+                        if (GlobalConfig.getDebug()) {
+                            log.info("Zero delay, end timestamp: {}, total time: {}", endMillis, endMillis - startMillis);
+                        }
                         TimeUnit.SECONDS.sleep(2);
                     }
                 } catch (Exception e) {
