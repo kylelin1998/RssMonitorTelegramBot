@@ -11,8 +11,10 @@ import code.handler.message.InlineKeyboardButtonListBuilder;
 import code.handler.steps.StepResult;
 import code.handler.steps.StepsBuilder;
 import code.handler.steps.StepsChatSession;
+import code.handler.store.ChatButtonsStore;
 import code.util.*;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONWriter;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -71,6 +73,7 @@ public class Handler {
                     where.setEnable(YesOrNoEnum.Yes.getNum());
                     List<MonitorTableEntity> list = MonitorTableRepository.selectList(where);
                     if (list.isEmpty()) {
+                        log.info("Zero delay, monitor list is empty!");
                         TimeUnit.MINUTES.sleep(2);
                     } else {
                         CountDownLatch countDownLatch = new CountDownLatch(list.size());
@@ -526,6 +529,112 @@ public class Handler {
                 })
                 .build();
 
+        // Admin
+        StepsBuilder
+                .create()
+                .bindCommand(Command.Admin)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    List<List<InlineKeyboardButton>> keyboardButton = InlineKeyboardButtonListBuilder
+                            .create()
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.SetChatButtons), CallbackBuilder.buildCallbackData(true, session, Command.SetChatButtons, null))
+                                    .build()
+                            )
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.UpdateConfig), CallbackBuilder.buildCallbackData(true, session, Command.UpdateConfig, null))
+                                    .build()
+                            )
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Restart), CallbackBuilder.buildCallbackData(true, session, Command.Restart, null))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Upgrade), CallbackBuilder.buildCallbackData(true, session, Command.Upgrade, null))
+                                    .build()
+                            )
+                            .build();
+
+                    Properties properties = System.getProperties();
+
+                    StringBuilder builder = new StringBuilder();
+                    builder.append("os.name: ");
+                    builder.append(properties.getProperty("os.name"));
+                    builder.append("\n");
+                    builder.append("os.arch: ");
+                    builder.append(properties.getProperty("os.arch"));
+
+                    code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(),  keyboardButton);
+
+                    return StepResult.end();
+                })
+                .build();
+
+        // Set Chat Buttons
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetChatButtons)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    ConfigSettings config = Config.readConfig();
+                    String chatButtons = config.getChatButtons();
+                    if (StringUtils.isNotBlank(chatButtons)) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), chatButtons, false);
+                    }
+
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeChatButtons), false);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (StringUtils.isBlank(text)) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                        return StepResult.reject();
+                    }
+                    if (!text.equals("-1")) {
+                        Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.verify(text);
+                        if (!buttons.isPresent()) {
+                            code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                            return StepResult.reject();
+                        }
+                        ChatButtonsStore.ChatButtonsToInlineKeyboardButtons keyboardButtons = buttons.get();
+
+                        for (Map.Entry<String, List<InlineKeyboardButton>> entry : keyboardButtons.getMap().entrySet()) {
+                            List<List<InlineKeyboardButton>> build = InlineKeyboardButtonListBuilder
+                                    .create()
+                                    .add(entry.getValue())
+                                    .build();
+                            code.handler.message.MessageHandle.sendInlineKeyboardList(session.getChatId(), session.getReplyToMessageId(), entry.getKey(), build);
+                        }
+                    }
+                    ChatButtonsStore.set(text);
+
+                    ConfigSettings config = Config.readConfig();
+                    config.setChatButtons(text);
+                    Config.saveConfig(config);
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                    return StepResult.ok();
+                })
+                .build();
+
         // Restart
         StepsBuilder
                 .create()
@@ -561,6 +670,60 @@ public class Handler {
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
                     }
+                    return StepResult.end();
+                })
+                .build();
+
+        // Update config
+        StepsBuilder
+                .create()
+                .bindCommand(Command.UpdateConfig)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    List<InlineKeyboardButton> buttons = InlineKeyboardButtonBuilder
+                            .create()
+                            .add(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm), CallbackBuilder.buildCallbackData(false, session, Command.UpdateConfig, "confirm"))
+                            .add(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel), CallbackBuilder.buildCallbackData(false, session, Command.UpdateConfig, "cancel"))
+                            .build();
+                    ConfigSettings config = Config.readConfig();
+
+                    code.handler.message.MessageHandle.sendMessage(session.getFromId(), JSON.toJSONString(config, JSONWriter.Feature.PrettyFormat), false);
+                    code.handler.message.MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureToUpdateTheConfig),  buttons);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (text.equals("confirm")) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeConfigContent), false);
+                        return StepResult.ok();
+                    } else {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
+                        return StepResult.end();
+                    }
+                }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    ConfigSettings configSettings = Config.verifyConfig(text);
+                    if (null == configSettings) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateConfigFail), false);
+                        return StepResult.reject();
+                    }
+
+                    boolean b = Config.saveConfig(configSettings);
+                    if (b) {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                    } else {
+                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFailed), false);
+                    }
+
                     return StepResult.end();
                 })
                 .build();
@@ -751,12 +914,13 @@ public class Handler {
                 if (!SentRecordTableRepository.exists(name, entity.getChatId()) || forceRecord) {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
-                        String linkMd5 = DigestUtils.md5Hex(entry.getLink());
+
                         SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
-                        sentRecordTableEntity.setId(linkMd5);
+                        sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                         sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                         sentRecordTableEntity.setName(name);
                         sentRecordTableEntity.setChatId(entity.getChatId());
+                        sentRecordTableEntity.setLink(entry.getLink());
                         SentRecordTableRepository.save(sentRecordTableEntity);
                     }
                 }
@@ -764,31 +928,43 @@ public class Handler {
                 String template = entity.getTemplate();
                 for (int i = 0; i < entries.size(); i++) {
                     SyndEntry entry = entries.get(i);
-                    String linkMd5 = DigestUtils.md5Hex(entry.getLink());
 
-                    if (SentRecordTableRepository.exists(linkMd5, name, entity.getChatId()) && !isTest) continue;
+                    if (SentRecordTableRepository.exists(entry.getLink(), name, entity.getChatId()) && !isTest) continue;
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
+                        List<List<InlineKeyboardButton>> build = null;
+                        Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
+                        if (buttons.isPresent()) {
+                            Optional<List<InlineKeyboardButton>> inlineKeyboardButtonList = buttons.get().getButtons(session.getChatId());
+                            if (inlineKeyboardButtonList.isPresent()) {
+                                build = InlineKeyboardButtonListBuilder
+                                        .create()
+                                        .add(inlineKeyboardButtonList.get())
+                                        .build();
+                            }
+                        }
+
                         if (!isTest) {
                             List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
                             if (null == chatIdArray || chatIdArray.isEmpty()) {
                                 chatIdArray = Arrays.asList(GlobalConfig.getChatIdArray());
                             }
                             for (String s : chatIdArray) {
-                                MessageHandle.sendMessage(s, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get());
+                                MessageHandle.sendMessage(s, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
                             }
 
-                            if (GlobalConfig.getChatIdArray().length > 0) {
+                            if (chatIdArray.size() > 0) {
                                 SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
-                                sentRecordTableEntity.setId(linkMd5);
+                                sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                                 sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                                 sentRecordTableEntity.setName(name);
                                 sentRecordTableEntity.setChatId(entity.getChatId());
+                                sentRecordTableEntity.setLink(entry.getLink());
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
-                            MessageHandle.sendMessage(session.getChatId(), text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get());
+                            MessageHandle.sendMessage(session.getChatId(), null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
                             if (i >= 2) {
                                 break;
                             }
@@ -858,6 +1034,8 @@ public class Handler {
                     } else {
                         s = StringUtils.replace(s, "${telegraph}", "");
                     }
+                } else {
+                    s = StringUtils.replace(s, "${telegraph}", "");
                 }
             }
 

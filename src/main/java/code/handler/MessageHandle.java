@@ -195,15 +195,15 @@ public class MessageHandle {
     }
 
     public static Message sendMessage(String chatId, String text, boolean webPagePreview) {
-        return sendMessage(chatId, null, text, webPagePreview, true);
+        return sendMessage(chatId, null, text, webPagePreview, true, null);
     }
     public static Message sendMessage(String chatId, String text, boolean webPagePreview, boolean notification) {
-        return sendMessage(chatId, null, text, webPagePreview, notification);
+        return sendMessage(chatId, null, text, webPagePreview, notification, null);
     }
     public static Message sendMessage(String chatId, Integer replyToMessageId, String text, boolean webPagePreview) {
-        return sendMessage(chatId, replyToMessageId, text, webPagePreview, true);
+        return sendMessage(chatId, replyToMessageId, text, webPagePreview, true, null);
     }
-    public static Message sendMessage(String chatId, Integer replyToMessageId, String text, boolean webPagePreview, boolean notification) {
+    public static Message sendMessage(String chatId, Integer replyToMessageId, String text, boolean webPagePreview, boolean notification, List<List<InlineKeyboardButton>> buttons) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         sendMessage.setReplyToMessageId(replyToMessageId);
@@ -214,6 +214,11 @@ public class MessageHandle {
         }
         if (!webPagePreview) {
             sendMessage.disableWebPagePreview();
+        }
+        if (null != buttons && !buttons.isEmpty()) {
+            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+            inlineKeyboardMarkup.setKeyboard(buttons);
+            sendMessage.setReplyMarkup(inlineKeyboardMarkup);
         }
         return sendMessage(sendMessage);
     }

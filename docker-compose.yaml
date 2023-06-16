@@ -1,9 +1,0 @@
-version: "3"
-services:
-  rssb:
-    image: "ghcr.io/kylelin1998/rssb:v1.1.1"
-    container_name: rssb
-    restart: "always"
-    volumes:
-      - "/etc/localtime:/etc/localtime"
-      - "./config:/app/config"

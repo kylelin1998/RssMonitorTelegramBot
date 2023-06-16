@@ -15,10 +15,13 @@ public enum Command {
     Off("off"),
     Delete("delete"),
 
+    Admin("admin"),
     Exit("exit"),
     Language("language"),
     Restart("restart"),
+    UpdateConfig("uc"),
     Upgrade("upgrade"),
+    SetChatButtons("set_chat_buttons"),
 
     ;
 

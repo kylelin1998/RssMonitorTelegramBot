@@ -4,14 +4,19 @@ import code.eneity.MonitorTableEntity;
 import code.eneity.YesOrNoEnum;
 import code.util.ExceptionUtil;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
+import java.util.Properties;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import static code.Main.*;
@@ -19,17 +24,19 @@ import static code.Main.*;
 @Slf4j
 public class Config {
 
-    public static final String CurrentDir = System.getProperty("user.dir") + "/config";
-    public static final String MonitorDir = System.getProperty("user.dir") + "/config/monitor";
+    public static final String CurrentDir = System.getProperty("user.dir") + File.separator + "config";
+    public static final String MonitorDir = CurrentDir + File.separator + "monitor";
 
-    public static final String SettingsPath = CurrentDir + "/config.json";
+    public static final String SettingsPath = CurrentDir + File.separator + "config.json";
 
-    public static final String DBPath = CurrentDir + "/db.db";
+    public static final String DBPath = CurrentDir + File.separator + "db.db";
 
     public static String TelegraphHtml;
 
+    private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.30";
+        public final static String CurrentVersion = "1.0.45";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -53,26 +60,93 @@ public class Config {
         }
     }
 
+    public static ConfigSettings initConfig() {
+        File file = new File(SettingsPath);
+        if (!file.exists()) {
+            Properties properties = System.getProperties();
+
+            ConfigSettings configSettings = new ConfigSettings();
+            configSettings.setBotAdminId(properties.getProperty("botAdminId", ""));
+            configSettings.setBotName(properties.getProperty("botName", ""));
+            configSettings.setBotToken(properties.getProperty("botToken", ""));
+            configSettings.setOnProxy(Boolean.valueOf(properties.getProperty("botProxy", "false")));
+            configSettings.setProxyHost(properties.getProperty("botProxyHost", "127.0.0.1"));
+            configSettings.setProxyPort(Integer.valueOf(properties.getProperty("botProxyPort", "7890")));
+
+            saveConfig(handle(configSettings));
+        }
+        return readConfig();
+    }
+
+    private static ConfigSettings handle(ConfigSettings configSettings) {
+        Boolean debug = configSettings.getDebug();
+        if (null == debug) {
+            configSettings.setDebug(false);
+        }
+        String[] permissionChatIdArray = configSettings.getPermissionChatIdArray();
+        if (null == permissionChatIdArray) {
+            configSettings.setPermissionChatIdArray(new String[]{ configSettings.getBotAdminId() });
+        }
+        String[] chatIdArray = configSettings.getChatIdArray();
+        if (null == chatIdArray) {
+            configSettings.setChatIdArray(new String[]{ configSettings.getBotAdminId() });
+        }
+        return configSettings;
+    }
+
     public static ConfigSettings readConfig() {
+        ReentrantReadWriteLock.ReadLock readLock = reentrantReadWriteLock.readLock();
+        readLock.lock();
         try {
             File file = new File(SettingsPath);
             boolean exists = file.exists();
             if (exists) {
                 String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
                 ConfigSettings configSettings = JSON.parseObject(text, ConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
-                Boolean debug = configSettings.getDebug();
-                if (null == debug) {
-                    configSettings.setDebug(false);
-                }
-                if (null == configSettings.getPermissionChatIdArray()) {
-                    configSettings.setPermissionChatIdArray(new String[] {});
-                }
-                return configSettings;
+                return handle(configSettings);
+            } else {
+                log.warn("Settings file not found, " + SettingsPath);
             }
         } catch (IOException e) {
-            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e), SettingsPath);
+        } finally {
+            readLock.unlock();
         }
-        return new ConfigSettings();
+        return null;
+    }
+
+    public static ConfigSettings verifyConfig(String configJson) {
+        if (StringUtils.isBlank(configJson)) {
+            return null;
+        }
+        ConfigSettings configSettings = null;
+        try {
+            configSettings = JSON.parseObject(configJson, ConfigSettings.class, JSONReader.Feature.SupportSmartMatch);
+        } catch (JSONException e) {
+        }
+        if (null == configSettings) {
+            return null;
+        }
+        for (Field field : configSettings.getClass().getDeclaredFields()) {
+            ConfigField configField = field.getAnnotation(ConfigField.class);
+            if (null == configField) {
+                continue;
+            }
+            if (configField.isNotNull()) {
+                try {
+                    field.setAccessible(true);
+                    Object o = field.get(configSettings);
+                    if (null == o) {
+                        return null;
+                    }
+                } catch (IllegalAccessException e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    return null;
+                }
+            }
+        }
+
+        return configSettings;
     }
 
     public synchronized static void oldDataConvert() {
@@ -115,15 +189,19 @@ public class Config {
         });
     }
 
-//    public synchronized static boolean saveConfig(ConfigSettings configSettings) {
-//        try {
-//            File file = new File(SettingsPath);
-//            FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
-//            return true;
-//        } catch (IOException e) {
-//            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-//        }
-//        return false;
-//    }
+    public static boolean saveConfig(ConfigSettings configSettings) {
+        ReentrantReadWriteLock.WriteLock writeLock = reentrantReadWriteLock.writeLock();
+        writeLock.lock();
+        try {
+            File file = new File(SettingsPath);
+            FileUtils.write(file, JSON.toJSONString(configSettings, JSONWriter.Feature.PrettyFormat), StandardCharsets.UTF_8);
+            return true;
+        } catch (IOException e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        } finally {
+            writeLock.unlock();
+        }
+        return false;
+    }
 
 }

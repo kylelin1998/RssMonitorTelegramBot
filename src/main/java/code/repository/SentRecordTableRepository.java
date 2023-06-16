@@ -31,9 +31,9 @@ public class SentRecordTableRepository extends TableRepository<SentRecordTableEn
     public Boolean exists(String name, String chatId) {
         return exists(null, name, chatId);
     }
-    public Boolean exists(String id, String name, String chatId) {
+    public Boolean exists(String link, String name, String chatId) {
         SentRecordTableEntity where = new SentRecordTableEntity();
-        where.setId(id);
+        where.setLink(link);
         where.setName(name);
         where.setChatId(chatId);
         Integer count = super.selectCount(where);

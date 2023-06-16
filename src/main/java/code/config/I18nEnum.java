@@ -84,6 +84,21 @@ public enum I18nEnum {
     Updating("updating"),
     Downloaded("downloaded"),
 
+    AreYouSureToUpdateTheConfig("are_you_sure_to_update_the_config"),
+    PleaseSendMeConfigContent("please_send_me_config_content"),
+    UpdateConfigFail("update_config_fail"),
+
+    UpdateSucceeded("update_succeeded"),
+    UpdateFailed("update_failed"),
+
+    SetChatButtons("set_chat_buttons"),
+    UpdateConfig("update_config"),
+    Restart("restart"),
+    Upgrade("upgrade"),
+
+    PleaseSendMeChatButtons("please_send_me_chat_buttons"),
+    FormatError("format_error"),
+
     ;
 
     private String key;
