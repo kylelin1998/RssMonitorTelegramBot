@@ -11,11 +11,22 @@ RSS监控最新文章， 如果有监控到最新文章会通知到您设置好�
 支持RSS同步到Telegraph
 
 ## 部署
+机器人的部署步骤是基于 Docker 的，其机器人升级功能也基于 Docker，因此请使用 Docker 进行部署，以防出现错误
+
+### 部署方式1 (推荐)
+#### 一键部署
+```
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token --restart=always kylelin1998/rss-tg-bot
+```
+#### 一键部署(开启代理)
+```
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --restart=always kylelin1998/rss-tg-bot
+```
+
+### 部署方式2 (不推荐)
 Youtube：https://youtu.be/CiDxb1ESijQ
 
 哔哩哔哩： https://www.bilibili.com/video/BV1Ts4y1S7bn/
-
-机器人的部署步骤是基于 Docker 的，其机器人升级功能也基于 Docker，因此请使用 Docker 进行部署，以防出现错误
 
 首先，在您的服务器上创建一个文件夹
 
@@ -77,6 +88,7 @@ create - 创建计划
 list - 计划列表
 exit - 退出
 language - 切换语言
+admin - 管理命令
 restart - 重启机器人
 upgrade - 升级机器人
 help - 帮助

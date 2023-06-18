@@ -13,11 +13,22 @@ Support custom message content to your decision.
 Support RSS article auto sync to Telegraph platform.
 
 ## Deploy
+The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
+
+### Deployment method 1 (recommended)
+#### One-click deployment
+```
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken --restart=always kylelin1998/rss-tg-bot
+```
+#### One-click deployment (with proxy enabled)
+```
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --restart=always kylelin1998/rss-tg-bot
+```
+
+### Deployment method 2 (not recommended)
 Youtube：https://youtu.be/CiDxb1ESijQ
 
 哔哩哔哩： https://www.bilibili.com/video/BV1Ts4y1S7bn/
-
-The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
 
 ### Prepare
 
@@ -77,6 +88,7 @@ create - Create plan
 list - Plan list
 exit - Exit
 language - Change language
+admin - Admin
 restart - Restart the bot
 upgrade - Upgrade the bot
 help - Help
