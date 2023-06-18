@@ -16,7 +16,7 @@ ENV PROXY_HOST=127.0.0.1
 ENV PROXY_PORT=7890
 
 WORKDIR /app
-COPY target/rss-monitor-for-telegram-universal.jar rss-monitor-for-telegram-universal.jar
+COPY rss-monitor-for-telegram-universal.jar rss-monitor-for-telegram-universal.jar
 COPY run.sh run.sh
 
 ENTRYPOINT ["sh", "run.sh"]
