@@ -1,5 +1,7 @@
 #!/bin/sh
 
-docker build -t kylelin1998/rss-tg-bot .
-docker tag kylelin1998/rss-tg-bot kylelin1998/rss-tg-bot:latest
-docker push kylelin1998/rss-tg-bot:latest
+sudo apt install -y qemu-user-static binfmt-support
+docker buildx create --use
+docker buildx ls
+
+docker buildx build --platform linux/amd64, linux/386, linux/arm64 -t kylelin1998/rss-tg-bot . --push
