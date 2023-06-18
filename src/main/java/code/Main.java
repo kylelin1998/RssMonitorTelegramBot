@@ -12,6 +12,7 @@ import code.handler.store.Store;
 import code.repository.*;
 import code.util.ExceptionUtil;
 import code.util.Snowflake;
+import com.alibaba.fastjson2.JSON;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -28,6 +29,10 @@ public class Main {
     public static Snowflake Snowflake = new Snowflake(997);
 
     public static void main(String[] args) {
+        log.info(String.format("Main args: %s", JSON.toJSONString(args)));
+        log.info(String.format("System properties: %s", System.getProperties()));
+        log.info(String.format("Config: %s", JSON.toJSONString(GlobalConfig)));
+
         Unirest
                 .config()
                 .enableCookieManagement(false);
