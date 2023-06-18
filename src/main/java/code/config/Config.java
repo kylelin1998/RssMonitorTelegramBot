@@ -91,6 +91,10 @@ public class Config {
         if (null == chatIdArray) {
             configSettings.setChatIdArray(new String[]{ configSettings.getBotAdminId() });
         }
+        Integer intervalMinute = configSettings.getIntervalMinute();
+        if (null == intervalMinute) {
+            configSettings.setIntervalMinute(5);
+        }
         return configSettings;
     }
 
