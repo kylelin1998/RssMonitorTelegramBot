@@ -1,10 +1,7 @@
 package code.handler;
 
 import code.config.*;
-import code.eneity.MonitorTableEntity;
-import code.eneity.PageEntity;
-import code.eneity.SentRecordTableEntity;
-import code.eneity.YesOrNoEnum;
+import code.eneity.*;
 import code.handler.message.CallbackBuilder;
 import code.handler.message.InlineKeyboardButtonBuilder;
 import code.handler.message.InlineKeyboardButtonListBuilder;
@@ -12,6 +9,7 @@ import code.handler.steps.StepResult;
 import code.handler.steps.StepsBuilder;
 import code.handler.steps.StepsChatSession;
 import code.handler.store.ChatButtonsStore;
+import code.handler.store.WebhookStore;
 import code.util.*;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
@@ -19,8 +17,10 @@ import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndPerson;
+import kong.unirest.HttpResponse;
+import kong.unirest.RequestBodyEntity;
+import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -549,11 +549,13 @@ public class Handler {
                             .add(InlineKeyboardButtonBuilder
                                     .create()
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.SetChatButtons), CallbackBuilder.buildCallbackData(true, session, Command.SetChatButtons, null))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.SettingWebhook), CallbackBuilder.buildCallbackData(true, session, Command.Webhook, null))
                                     .build()
                             )
                             .add(InlineKeyboardButtonBuilder
                                     .create()
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.UpdateConfig), CallbackBuilder.buildCallbackData(true, session, Command.UpdateConfig, null))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.HideCopyrightTips), CallbackBuilder.buildCallbackData(true, session, Command.HideCopyrightTips, null))
                                     .build()
                             )
                             .add(InlineKeyboardButtonBuilder
@@ -632,6 +634,112 @@ public class Handler {
                     Config.saveConfig(config);
                     code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
                     return StepResult.ok();
+                })
+                .build();
+
+        // Hide Copyright Tips
+        StepsBuilder
+                .create()
+                .bindCommand(Command.HideCopyrightTips)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
+                    inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm));
+                    inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.HideCopyrightTips, "true"));
+
+                    InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+                    inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
+                    inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.HideCopyrightTips, "false"));
+
+                    MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureYouWantToHideCopyrightTips), inlineKeyboardButton, inlineKeyboardButton2);
+
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    Boolean of = Boolean.valueOf(session.getText());
+                    ConfigSettings configSettings = Config.readConfig();
+                    configSettings.setHideCopyrightTips(of);
+                    Config.saveConfig(configSettings);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+
+                    return StepResult.end();
+                })
+                .build();
+
+        // Webhook
+        StepsBuilder
+                .create()
+                .bindCommand(Command.Webhook)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(I18nHandle.getText(session.getFromId(), I18nEnum.CurrentSetting) + ": \n\n");
+                    WebhookTableEntity webhookTableEntity = WebhookTableRepository.selectOne(session.getFromId());
+                    if (null == webhookTableEntity) {
+                        builder.append(Config.WebhookJson);
+                    } else {
+                        builder.append(webhookTableEntity.getSettingsJson());
+                    }
+                    builder.append("\n\n");
+                    builder.append(I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureToUpdateTheConfig));
+
+                    InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
+                    inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Confirm));
+                    inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Webhook, "true"));
+
+                    InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+                    inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
+                    inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Webhook, "false"));
+
+                    MessageHandle.sendInlineKeyboard(session.getChatId(), builder.toString(), inlineKeyboardButton, inlineKeyboardButton2);
+
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    Boolean of = Boolean.valueOf(session.getText());
+                    if (of) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeWebhookSettings), false);
+                        return StepResult.ok();
+                    } else {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
+                        return StepResult.end();
+                    }
+                }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    boolean verify = WebhookStore.verify(text);
+                    if (!verify) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateConfigFail), false);
+                        return StepResult.reject();
+                    }
+                    WebhookStore.Webhook webhook = WebhookStore.get(text).get();
+
+                    WebhookTableEntity webhookTableEntity = new WebhookTableEntity();
+                    webhookTableEntity.setChatId(session.getFromId());
+                    webhookTableEntity.setSettingsJson(JSON.toJSONString(webhook, JSONWriter.Feature.PrettyFormat));
+                    WebhookTableRepository.save(webhookTableEntity);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+
+                    return StepResult.end();
                 })
                 .build();
 
@@ -929,29 +1037,19 @@ public class Handler {
                 for (int i = 0; i < entries.size(); i++) {
                     SyndEntry entry = entries.get(i);
 
-                    if (SentRecordTableRepository.exists(entry.getLink(), name, entity.getChatId()) && !isTest) continue;
+                    if (SentRecordTableRepository.exists(entry.getLink(), name, entity.getChatId()) && !isTest) {
+                        continue;
+                    }
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
-                        List<List<InlineKeyboardButton>> build = null;
-                        Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
-                        if (buttons.isPresent()) {
-                            Optional<List<InlineKeyboardButton>> inlineKeyboardButtonList = buttons.get().getButtons(session.getChatId());
-                            if (inlineKeyboardButtonList.isPresent()) {
-                                build = InlineKeyboardButtonListBuilder
-                                        .create()
-                                        .add(inlineKeyboardButtonList.get())
-                                        .build();
-                            }
-                        }
-
                         if (!isTest) {
                             List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
                             if (null == chatIdArray || chatIdArray.isEmpty()) {
                                 chatIdArray = Arrays.asList(GlobalConfig.getChatIdArray());
                             }
                             for (String s : chatIdArray) {
-                                MessageHandle.sendMessage(s, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+                                sendRss(s, session, entity, text);
                             }
 
                             if (chatIdArray.size() > 0) {
@@ -964,18 +1062,66 @@ public class Handler {
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
-                            MessageHandle.sendMessage(session.getChatId(), null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+                            sendRss(session.getChatId(), session, entity, text);
                             if (i >= 2) {
                                 break;
                             }
                         }
                     }
                 }
-
             }
         } catch (Exception e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
             if (isTest) MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), e.getMessage(), false);
+        }
+    }
+
+    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text) {
+        List<List<InlineKeyboardButton>> build = null;
+        Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
+        if (buttons.isPresent()) {
+            Optional<List<InlineKeyboardButton>> inlineKeyboardButtonList = buttons.get().getButtons(session.getChatId());
+            if (inlineKeyboardButtonList.isPresent()) {
+                build = InlineKeyboardButtonListBuilder
+                        .create()
+                        .add(inlineKeyboardButtonList.get())
+                        .build();
+            }
+        }
+
+        MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+
+        WebhookTableEntity webhookTableEntity = WebhookTableRepository.selectOne(entity.getChatId());
+        if (null != webhookTableEntity) {
+            Optional<WebhookStore.Webhook> webhookOptional = WebhookStore.get(webhookTableEntity.getSettingsJson());
+            if (webhookOptional.isPresent()) {
+                WebhookStore.Webhook webhook = webhookOptional.get();
+                if (webhook.isEnable()) {
+                    try {
+                        for (WebhookStore.WebhookRequest request : webhook.getList()) {
+                            String body = JSON.toJSONString(request.getBody());
+                            String str = JSON.toJSONString(text);
+                            str = StringUtils.removeStart(str, "\"");
+                            str = StringUtils.removeEnd(str, "\"");
+                            body = StringUtils.replace(body, "${text}", str);
+
+                            RequestBodyEntity requestBody = Unirest
+                                    .request(request.getMethod(), request.getUrl())
+                                    .headers(request.getHeaders())
+                                    .body(body)
+                                    .connectTimeout((int) TimeUnit.MILLISECONDS.convert(20, TimeUnit.SECONDS))
+                                    .socketTimeout((int) TimeUnit.MILLISECONDS.convert(40, TimeUnit.SECONDS));
+                            if (GlobalConfig.getOnProxy()) {
+                                requestBody.proxy(GlobalConfig.getProxyHost(), GlobalConfig.getProxyPort());
+                            }
+                            HttpResponse<String> rsp = requestBody.asString();
+                            log.info("Webhook request, url: {}, body: {}, rsp: {}", request.getUrl(), body, rsp.getBody());
+                        }
+                    } catch (Exception e) {
+                        log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    }
+                }
+            }
         }
     }
 
@@ -1026,9 +1172,13 @@ public class Handler {
                 }
 
                 if (StringUtils.isNotBlank(html)) {
-                    String telegraphHtml = replaceTelegraphHtml(entry.getLink(), entry.getTitle());
+                    String telegraphHtml = null;
+                    if (!GlobalConfig.getHideCopyrightTips()) {
+                        telegraphHtml = replaceTelegraphHtml(entry.getLink(), entry.getTitle());
+                    }
 
-                    TelegraphUtil.SaveResponse response = TelegraphUtil.save(RequestProxyConfig.create(), entry.getTitle(), author, html, telegraphHtml);
+                    TelegraphUtil.SaveResponse response =
+                            TelegraphUtil.save(RequestProxyConfig.create(), entry.getTitle(), author, html, telegraphHtml);
                     if (response.isOk()) {
                         s = StringUtils.replace(s, "${telegraph}", response.getUrl());
                     } else {

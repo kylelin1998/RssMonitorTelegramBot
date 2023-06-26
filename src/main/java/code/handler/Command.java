@@ -22,6 +22,8 @@ public enum Command {
     UpdateConfig("uc"),
     Upgrade("upgrade"),
     SetChatButtons("set_chat_buttons"),
+    HideCopyrightTips("hide_copyright_tips"),
+    Webhook("webhook"),
 
     ;
 

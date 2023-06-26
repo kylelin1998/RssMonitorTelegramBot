@@ -31,12 +31,17 @@ public class Config {
 
     public static final String DBPath = CurrentDir + File.separator + "db.db";
 
-    public static String TelegraphHtml;
+    public static String TelegraphHtml = new BufferedReader(new InputStreamReader(Config.class.getResourceAsStream("telegraph.html"), StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
+    public static String WebhookJson = new BufferedReader(new InputStreamReader(Config.class.getResourceAsStream("webhook.json"), StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
 
     private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.45";
+        public final static String CurrentVersion = "1.0.55";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -44,19 +49,9 @@ public class Config {
     }
 
     static {
-        InputStream is = Config.class.getResourceAsStream("telegraph.html");
-
-        TelegraphHtml = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                .lines()
-                .collect(Collectors.joining("\n"));
-
         File file = new File(CurrentDir);
         if (!file.exists()) {
             file.mkdirs();
-        }
-        File mf = new File(MonitorDir);
-        if (!mf.exists()) {
-            mf.mkdirs();
         }
     }
 
@@ -94,6 +89,10 @@ public class Config {
         Integer intervalMinute = configSettings.getIntervalMinute();
         if (null == intervalMinute) {
             configSettings.setIntervalMinute(5);
+        }
+        Boolean hideCopyrightTips = configSettings.getHideCopyrightTips();
+        if (null == hideCopyrightTips) {
+            configSettings.setHideCopyrightTips(false);
         }
         return configSettings;
     }

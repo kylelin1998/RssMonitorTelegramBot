@@ -23,10 +23,11 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 public class Main {
     public static CommandsHandler Bot = null;
     public static ConfigSettings GlobalConfig = Config.initConfig();
-    public static code.repository.SentRecordTableRepository SentRecordTableRepository = new SentRecordTableRepository();
-    public static code.repository.I18nTableRepository I18nTableRepository = new I18nTableRepository();
-    public static code.repository.MonitorTableRepository MonitorTableRepository = new MonitorTableRepository();
-    public static Snowflake Snowflake = new Snowflake(997);
+    public final static code.repository.SentRecordTableRepository SentRecordTableRepository = new SentRecordTableRepository();
+    public final static code.repository.I18nTableRepository I18nTableRepository = new I18nTableRepository();
+    public final static code.repository.MonitorTableRepository MonitorTableRepository = new MonitorTableRepository();
+    public final static code.repository.WebhookTableRepository WebhookTableRepository = new WebhookTableRepository();
+    public final static Snowflake Snowflake = new Snowflake(997);
 
     public static void main(String[] args) {
         log.info(String.format("Main args: %s", JSON.toJSONString(args)));

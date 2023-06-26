@@ -42,4 +42,7 @@ public class ConfigSettings {
     @JSONField(name = "chat_buttons")
     private String chatButtons;
 
+    @JSONField(name = "hide_copyright_tips")
+    private Boolean hideCopyrightTips;
+
 }

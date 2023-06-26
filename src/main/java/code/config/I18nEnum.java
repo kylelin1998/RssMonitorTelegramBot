@@ -99,6 +99,12 @@ public enum I18nEnum {
     PleaseSendMeChatButtons("please_send_me_chat_buttons"),
     FormatError("format_error"),
 
+    SettingWebhook("setting_webhook"),
+    HideCopyrightTips("hide_copyright_tips"),
+    AreYouSureYouWantToHideCopyrightTips("are_you_sure_you_want_to_hide_copyright_tips"),
+    CurrentSetting("current_setting"),
+    PleaseSendMeWebhookSettings("please_send_me_webhook_settings"),
+
     ;
 
     private String key;

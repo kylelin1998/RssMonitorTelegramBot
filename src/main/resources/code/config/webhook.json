@@ -1,0 +1,33 @@
+{
+  "enable":false,
+  "list":[
+    {
+      "url":"https://open.larksuite.com/open-apis/bot/v2/hook/...",
+      "method":"POST",
+      "headers":{
+        "User-Agent":"PostmanRuntime/7.31.3",
+        "Content-Type":"application/json"
+      },
+      "body":{
+        "msg_type":"text",
+        "content":{
+          "text":"哈喽 ${text}"
+        }
+      }
+    },
+    {
+      "url":"https://open.larksuite.com/open-apis/bot/v2/hook/...",
+      "method":"POST",
+      "headers":{
+        "User-Agent":"PostmanRuntime/7.31.3",
+        "Content-Type":"application/json"
+      },
+      "body":{
+        "msg_type":"text",
+        "content":{
+          "text":"Hello ${text}"
+        }
+      }
+    }
+  ]
+}
