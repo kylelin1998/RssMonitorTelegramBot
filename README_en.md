@@ -12,6 +12,8 @@ Support custom message content to your decision.
 
 Support RSS article auto sync to Telegraph platform.
 
+Support custom Webhook invocation.
+
 ## Deploy
 The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
 
