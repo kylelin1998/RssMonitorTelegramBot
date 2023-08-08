@@ -18,6 +18,10 @@ Support custom Webhook invocation.
 The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
 
 ### Deployment method 1 (recommended)
+⭐ Youtube: https://youtu.be/mNg6TFyozZk
+
+⭐ 哔哩哔哩： https://www.bilibili.com/video/BV1qF411f7pg/
+
 #### One-click deployment
 ```
 docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken --restart=always kylelin1998/rss-tg-bot
