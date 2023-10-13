@@ -3,6 +3,8 @@ package code.config;
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ConfigSettings {
 
@@ -44,5 +46,10 @@ public class ConfigSettings {
 
     @JSONField(name = "hide_copyright_tips")
     private Boolean hideCopyrightTips;
+
+    @JSONField(name = "exclude_keywords")
+    private List<String> excludeKeywords;
+    @JSONField(name = "exclude_keywords_regex")
+    private List<String> excludeKeywordsRegex;
 
 }

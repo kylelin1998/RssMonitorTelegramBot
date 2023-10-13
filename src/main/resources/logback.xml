@@ -11,7 +11,7 @@
     <!-- 控制台输出 -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder charset="utf-8">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%class.%method:%line] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -45,7 +45,7 @@
 
         <!-- 日志输出格式-->
         <encoder charset="utf-8">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%class.%method:%line] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -79,7 +79,7 @@
 
         <!-- 日志输出格式-->
         <encoder charset="utf-8">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%class.%method:%line] - %msg%n</pattern>
         </encoder>
     </appender>
 

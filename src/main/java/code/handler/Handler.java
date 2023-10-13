@@ -31,6 +31,9 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static code.Main.*;
 
@@ -170,8 +173,8 @@ public class Handler {
                     MonitorTableRepository.insert(settings);
 
                     showMonitorHandle(session, id);
-                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitorFinish), false);
-                    rssMessageHandle(session, settings, true, false);
+//                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitorFinish), false);
+//                    rssMessageHandle(session, settings, true, false);
 
                     return StepResult.ok();
                 })
@@ -193,21 +196,32 @@ public class Handler {
                         return StepResult.end();
                     }
 
+                    InlineKeyboardButtonListBuilder listBuilder = InlineKeyboardButtonListBuilder.create();
                     List<InlineKeyboardButton> inlineKeyboardButtonArrayList = new ArrayList<>();
                     for (Field field : settings.getClass().getDeclaredFields()) {
                         DisplayConfigAnnotation annotation = field.getAnnotation(DisplayConfigAnnotation.class);
                         if (null != annotation && annotation.set()) {
-                            InlineKeyboardButton row = new InlineKeyboardButton();
-                            row.setText(I18nHandle.getText(session.getFromId(), annotation.i18n()));
-                            row.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Update, field.getName()));
-
-                            inlineKeyboardButtonArrayList.add(row);
+                            listBuilder.add(
+                                    InlineKeyboardButtonBuilder
+                                            .create()
+                                            .add(I18nHandle.getText(session.getFromId(), annotation.i18n()), CallbackBuilder.buildCallbackData(false, session, Command.Update, field.getName()))
+                                            .build()
+                            );
                         }
                     }
+                    listBuilder.add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Back), CallbackBuilder.buildCallbackData(true, session, Command.Get, settings.getId()))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Refresh), CallbackBuilder.buildCallbackData(true, session, Command.Get, settings.getId()))
+                                    .build()
+                    );
 
-                    MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor1), inlineKeyboardButtonArrayList);
+
+                    MessageHandle.updateInlineKeyboardList(session.getCallbackQuery().getMessage(), session.getChatId(), session.getCallbackQuery().getMessage().getText(), listBuilder.build());
 
                     context.put("id", session.getText());
+                    context.put("session", session);
 
                     return StepResult.ok();
                 })
@@ -245,7 +259,8 @@ public class Handler {
                         inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Off));
                         inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Update, String.valueOf(YesOrNoEnum.No.getNum())));
 
-                        MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), inlineKeyboardButton, inlineKeyboardButton2);
+                        Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), inlineKeyboardButton, inlineKeyboardButton2);
+                        putDeleteMessage(context, message);
                         return StepResult.ok();
                     }
 
@@ -298,9 +313,10 @@ public class Handler {
                         settings.setUpdateTime(System.currentTimeMillis());
                         MonitorTableRepository.update(settings);
 
-                        showMonitorHandle(session, id);
-
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitorFinish), false);
+                        showMonitorHandle((StepsChatSession) context.get("session"), id);
+                        deleteMessage(context);
+
                     } catch (IllegalArgumentException e) {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFieldError), false);
                         return StepResult.reject();
@@ -328,7 +344,9 @@ public class Handler {
                     inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
                     inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Delete, ""));
 
-                    MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorConfirm), inlineKeyboardButton, inlineKeyboardButton2);
+                    Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorConfirm), inlineKeyboardButton, inlineKeyboardButton2);
+                    putDeleteMessage(context, message);
+                    context.put("session", session);
 
                     return StepResult.ok();
                 })
@@ -340,12 +358,11 @@ public class Handler {
                             MonitorTableRepository.delete(entity.getId());
                         }
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.DeleteMonitorFinish), false);
-
-                        showMonitorListHandle(session);
+                        showMonitorListHandle((StepsChatSession) context.get("session"));
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
                     }
-
+                    deleteMessage(context);
                     return StepResult.end();
                 })
                 .build();
@@ -416,7 +433,7 @@ public class Handler {
                     if (null != settings) {
                         settings.setEnable(YesOrNoEnum.Yes.getNum());
                         MonitorTableRepository.update(settings);
-                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.OnMonitor), false);
+                        showMonitorHandle(session, session.getText());
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
                     }
@@ -440,7 +457,7 @@ public class Handler {
                     if (null != settings) {
                         settings.setEnable(YesOrNoEnum.No.getNum());
                         MonitorTableRepository.update(settings);
-                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.OffMonitor), false);
+                        showMonitorHandle(session, session.getText());
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
                     }
@@ -560,6 +577,16 @@ public class Handler {
                             )
                             .add(InlineKeyboardButtonBuilder
                                     .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.ExcludeKeywords), CallbackBuilder.buildCallbackData(true, session, Command.SetExcludeKeywords, null))
+                                    .build()
+                            )
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.ExcludeKeywordsRegex), CallbackBuilder.buildCallbackData(true, session, Command.SetExcludeKeywordsRegex, null))
+                                    .build()
+                            )
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.Restart), CallbackBuilder.buildCallbackData(true, session, Command.Restart, null))
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.Upgrade), CallbackBuilder.buildCallbackData(true, session, Command.Upgrade, null))
                                     .build()
@@ -578,6 +605,101 @@ public class Handler {
                     code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(),  keyboardButton);
 
                     return StepResult.end();
+                })
+                .build();
+
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetExcludeKeywordsRegex)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    ConfigSettings config = Config.readConfig();
+                    List<String> excludeKeywordsRegex = config.getExcludeKeywordsRegex();
+                    if (null != excludeKeywordsRegex && !excludeKeywordsRegex.isEmpty()) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), excludeKeywordsRegex.stream().collect(Collectors.joining("\n")), false);
+                    }
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeExcludeKeywordsRegex), false);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (StringUtils.isBlank(text)) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                        return StepResult.reject();
+                    }
+                    List<String> excludeKeywordsRegex = new ArrayList<>();
+                    if (!text.equals("-1")) {
+                        String[] split = StringUtils.split(text, "\n");
+                        for (String s : split) {
+                            if (StringUtils.isNotBlank(s)) {
+                                excludeKeywordsRegex.add(s);
+                            }
+                        }
+                    }
+                    ConfigSettings config = Config.readConfig();
+                    config.setExcludeKeywordsRegex(excludeKeywordsRegex);
+                    Config.saveConfig(config);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded) + "\n\n" + excludeKeywordsRegex.stream().collect(Collectors.joining("\n")), false);
+                    return StepResult.ok();
+                })
+                .build();
+
+        // Set Exclude Keywords
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetExcludeKeywords)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    ConfigSettings config = Config.readConfig();
+                    List<String> excludeKeywords = config.getExcludeKeywords();
+                    if (null != excludeKeywords && !excludeKeywords.isEmpty()) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), excludeKeywords.stream().collect(Collectors.joining("\n")), false);
+                    }
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeExcludeKeywords), false);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (StringUtils.isBlank(text)) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                        return StepResult.reject();
+                    }
+                    List<String> excludeKeywords = new ArrayList<>();
+                    if (!text.equals("-1")) {
+                        String[] split = StringUtils.split(text, "\n");
+                        for (String s : split) {
+                            if (StringUtils.isNotBlank(s)) {
+                                excludeKeywords.add(s);
+                            }
+                        }
+                    }
+                    ConfigSettings config = Config.readConfig();
+                    config.setExcludeKeywords(excludeKeywords);
+                    Config.saveConfig(config);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded) + "\n\n" + excludeKeywords.stream().collect(Collectors.joining("\n")), false);
+                    return StepResult.ok();
                 })
                 .build();
 
@@ -660,7 +782,8 @@ public class Handler {
                     inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
                     inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.HideCopyrightTips, "false"));
 
-                    MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureYouWantToHideCopyrightTips), inlineKeyboardButton, inlineKeyboardButton2);
+                    Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureYouWantToHideCopyrightTips), inlineKeyboardButton, inlineKeyboardButton2);
+                    putDeleteMessage(context, message);
 
                     return StepResult.ok();
                 })
@@ -671,6 +794,7 @@ public class Handler {
                     Config.saveConfig(configSettings);
 
                     MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                    deleteMessage(context);
 
                     return StepResult.end();
                 })
@@ -710,7 +834,8 @@ public class Handler {
                     inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Cancel));
                     inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.Webhook, "false"));
 
-                    MessageHandle.sendInlineKeyboard(session.getChatId(), builder.toString(), inlineKeyboardButton, inlineKeyboardButton2);
+                    Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), builder.toString(), inlineKeyboardButton, inlineKeyboardButton2);
+                    putDeleteMessage(context, message);
 
                     return StepResult.ok();
                 })
@@ -721,6 +846,7 @@ public class Handler {
                         return StepResult.ok();
                     } else {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
+                        deleteMessage(context);
                         return StepResult.end();
                     }
                 }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
@@ -738,6 +864,7 @@ public class Handler {
                     WebhookTableRepository.save(webhookTableEntity);
 
                     MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                    deleteMessage(context);
 
                     return StepResult.end();
                 })
@@ -804,17 +931,19 @@ public class Handler {
                             .build();
                     ConfigSettings config = Config.readConfig();
 
-                    code.handler.message.MessageHandle.sendMessage(session.getFromId(), JSON.toJSONString(config, JSONWriter.Feature.PrettyFormat), false);
-                    code.handler.message.MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureToUpdateTheConfig),  buttons);
+                    MessageHandle.sendMessage(session.getFromId(), JSON.toJSONString(config, JSONWriter.Feature.PrettyFormat), false);
+                    Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureToUpdateTheConfig), buttons);
+                    putDeleteMessage(context, message);
                     return StepResult.ok();
                 })
                 .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     String text = session.getText();
                     if (text.equals("confirm")) {
-                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeConfigContent), false);
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeConfigContent), false);
                         return StepResult.ok();
                     } else {
-                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.CancelSucceeded), false);
+                        deleteMessage(context);
                         return StepResult.end();
                     }
                 }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
@@ -827,11 +956,11 @@ public class Handler {
 
                     boolean b = Config.saveConfig(configSettings);
                     if (b) {
-                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
                     } else {
-                        code.handler.message.MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFailed), false);
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateFailed), false);
                     }
-
+                    deleteMessage(context);
                     return StepResult.end();
                 })
                 .build();
@@ -932,6 +1061,19 @@ public class Handler {
 
     }
 
+    private static void putDeleteMessage(Map<String, Object> context, Message message) {
+        context.put("delete", message);
+    }
+    private static void deleteMessage(Map<String, Object> context) {
+        try {
+            if (context.containsKey("delete")) {
+                MessageHandle.deleteMessage((Message) context.get("delete"));
+            }
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+    }
+
     private static void showMonitorHandle(StepsChatSession session, String id) {
         MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
         if (null != settings) {
@@ -940,8 +1082,8 @@ public class Handler {
                     .add(
                             InlineKeyboardButtonBuilder
                                     .create()
-                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.On), CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()))
-                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Off), CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()))
+                                    .add((YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "✅ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.On), CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()))
+                                    .add((!YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "❌ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.Off), CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()))
                                     .build()
                     )
                     .add(
@@ -958,9 +1100,25 @@ public class Handler {
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.Delete), CallbackBuilder.buildCallbackData(true, session, Command.Delete, settings.getId()))
                                     .build()
                     )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Refresh), CallbackBuilder.buildCallbackData(true, session, Command.Get, settings.getId()))
+                                    .build()
+                    )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.Back), CallbackBuilder.buildCallbackData(true, session, Command.List, ""))
+                                    .build()
+                    )
                     .build();
 
-            MessageHandle.sendInlineKeyboardList(session.getChatId(), getMonitorData(session, settings), build);
+            if (null == session.getCallbackQuery()) {
+                MessageHandle.sendInlineKeyboardList(session.getChatId(), getMonitorData(session, settings), build);
+            } else {
+                MessageHandle.updateInlineKeyboardList(session.getCallbackQuery().getMessage(), session.getChatId(), getMonitorData(session, settings), build);
+            }
         } else {
             MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
         }
@@ -1000,6 +1158,9 @@ public class Handler {
                 MessageHandle.updateInlineKeyboardList(session.getCallbackQuery().getMessage(), session.getChatId(), builder.toString(), build);
             }
         } else {
+            if (null != session.getCallbackQuery()) {
+                MessageHandle.deleteMessage(session.getCallbackQuery().getMessage());
+            }
             MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingHere), false);
         }
     }
@@ -1049,7 +1210,9 @@ public class Handler {
                                 chatIdArray = Arrays.asList(GlobalConfig.getChatIdArray());
                             }
                             for (String s : chatIdArray) {
-                                sendRss(s, session, entity, text);
+                                if (!containsExcludeKeywords(text)) {
+                                    sendRss(s, session, entity, text);
+                                }
                             }
 
                             if (chatIdArray.size() > 0) {
@@ -1074,6 +1237,29 @@ public class Handler {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
             if (isTest) MessageHandle.sendMessage(GlobalConfig.getBotAdminId(), e.getMessage(), false);
         }
+    }
+
+    private static boolean containsExcludeKeywords(String text) {
+        try {
+            if (StringUtils.isNotBlank(text)) {
+                ConfigSettings configSettings = Config.readConfig();
+                for (String excludeKeyword : configSettings.getExcludeKeywords()) {
+                    if (StringUtils.contains(text, excludeKeyword)) {
+                        return true;
+                    }
+                }
+                for (String excludeKeywordsRegex : configSettings.getExcludeKeywordsRegex()) {
+                    Pattern pattern = Pattern.compile(excludeKeywordsRegex);
+                    Matcher matcher = pattern.matcher(text);
+                    if (matcher.find()) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return false;
     }
 
     private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text) {

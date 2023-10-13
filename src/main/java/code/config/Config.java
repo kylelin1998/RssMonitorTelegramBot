@@ -15,6 +15,8 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -41,7 +43,7 @@ public class Config {
     private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.55";
+        public final static String CurrentVersion = "1.0.70";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -93,6 +95,14 @@ public class Config {
         Boolean hideCopyrightTips = configSettings.getHideCopyrightTips();
         if (null == hideCopyrightTips) {
             configSettings.setHideCopyrightTips(false);
+        }
+        List<String> excludeKeywords = configSettings.getExcludeKeywords();
+        if (null == excludeKeywords) {
+            configSettings.setExcludeKeywords(new ArrayList<>());
+        }
+        List<String> excludeKeywordsRegex = configSettings.getExcludeKeywordsRegex();
+        if (null == excludeKeywordsRegex) {
+            configSettings.setExcludeKeywordsRegex(new ArrayList<>());
         }
         return configSettings;
     }

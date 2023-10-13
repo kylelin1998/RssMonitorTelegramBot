@@ -23,7 +23,11 @@ public enum Command {
     Upgrade("upgrade"),
     SetChatButtons("set_chat_buttons"),
     HideCopyrightTips("hide_copyright_tips"),
+
     Webhook("webhook"),
+
+    SetExcludeKeywords("exclude_keywords"),
+    SetExcludeKeywordsRegex("exclude_keywords_regex"),
 
     ;
 

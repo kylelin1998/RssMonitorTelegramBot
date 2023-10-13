@@ -105,6 +105,13 @@ public enum I18nEnum {
     CurrentSetting("current_setting"),
     PleaseSendMeWebhookSettings("please_send_me_webhook_settings"),
 
+    Back("back"),
+    Refresh("refresh"),
+    ExcludeKeywords("exclude_keywords"),
+    ExcludeKeywordsRegex("exclude_keywords_regex"),
+    PleaseSendMeExcludeKeywords("please_send_me_exclude_keywords"),
+    PleaseSendMeExcludeKeywordsRegex("please_send_me_exclude_keywords_regex"),
+
     ;
 
     private String key;
