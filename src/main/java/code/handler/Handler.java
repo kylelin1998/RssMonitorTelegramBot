@@ -1244,7 +1244,7 @@ public class Handler {
             if (StringUtils.isNotBlank(text)) {
                 ConfigSettings configSettings = Config.readConfig();
                 for (String excludeKeyword : configSettings.getExcludeKeywords()) {
-                    if (StringUtils.contains(text, excludeKeyword)) {
+                    if (StringUtils.containsIgnoreCase(text, excludeKeyword)) {
                         return true;
                     }
                 }
