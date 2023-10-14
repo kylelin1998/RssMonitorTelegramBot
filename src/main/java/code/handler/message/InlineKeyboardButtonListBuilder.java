@@ -29,10 +29,10 @@ public class InlineKeyboardButtonListBuilder {
             InlineKeyboardButtonBuilder builder = InlineKeyboardButtonBuilder
                     .create();
             if (entity.isHasPrev()) {
-                builder.add("<", CallbackBuilder.buildCallbackData(true, session, command, "" + (entity.getCurrent() - 1)));
+                builder.add("⬅️", CallbackBuilder.buildCallbackData(true, session, command, "" + (entity.getCurrent() - 1)));
             }
             if (entity.isHasNext()) {
-                builder.add(">", CallbackBuilder.buildCallbackData(true, session, command, "" + (entity.getCurrent() + 1)));
+                builder.add("➡️", CallbackBuilder.buildCallbackData(true, session, command, "" + (entity.getCurrent() + 1)));
             }
             this.keyboard.add(builder.build());
         }
