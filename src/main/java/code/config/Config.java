@@ -43,7 +43,7 @@ public class Config {
     private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.70";
+        public final static String CurrentVersion = "1.0.75";
         public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -96,6 +96,10 @@ public class Config {
         if (null == hideCopyrightTips) {
             configSettings.setHideCopyrightTips(false);
         }
+        Boolean verifySsl = configSettings.getVerifySsl();
+        if (null == verifySsl) {
+            configSettings.setVerifySsl(true);
+        }
         List<String> excludeKeywords = configSettings.getExcludeKeywords();
         if (null == excludeKeywords) {
             configSettings.setExcludeKeywords(new ArrayList<>());
@@ -103,6 +107,14 @@ public class Config {
         List<String> excludeKeywordsRegex = configSettings.getExcludeKeywordsRegex();
         if (null == excludeKeywordsRegex) {
             configSettings.setExcludeKeywordsRegex(new ArrayList<>());
+        }
+        List<String> includeKeywords = configSettings.getIncludeKeywords();
+        if (null == includeKeywords) {
+            configSettings.setIncludeKeywords(new ArrayList<>());
+        }
+        List<String> includeKeywordsRegex = configSettings.getIncludeKeywordsRegex();
+        if (null == includeKeywordsRegex) {
+            configSettings.setIncludeKeywordsRegex(new ArrayList<>());
         }
         return configSettings;
     }

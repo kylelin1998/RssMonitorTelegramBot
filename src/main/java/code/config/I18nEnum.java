@@ -112,6 +112,17 @@ public enum I18nEnum {
     PleaseSendMeExcludeKeywords("please_send_me_exclude_keywords"),
     PleaseSendMeExcludeKeywordsRegex("please_send_me_exclude_keywords_regex"),
 
+    VerifySsl("verify_ssl"),
+    AreYouSureYouWantToSetVerifySsl("are_you_sure_you_want_to_set_verify_ssl"),
+    Enable("enable"),
+    Disable("disable"),
+    NeedToRestartBot("need_to_restart_bot"),
+
+    IncludeKeywords("include_keywords"),
+    IncludeKeywordsRegex("include_keywords_regex"),
+    PleaseSendMeIncludeKeywords("please_send_me_include_keywords"),
+    PleaseSendMeIncludeKeywordsRegex("please_send_me_include_keywords_regex"),
+
     ;
 
     private String key;

@@ -22,7 +22,7 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 @Slf4j
 public class Main {
     public static CommandsHandler Bot = null;
-    public static ConfigSettings GlobalConfig = Config.initConfig();
+    public static volatile ConfigSettings GlobalConfig = Config.initConfig();
     public final static code.repository.SentRecordTableRepository SentRecordTableRepository = new SentRecordTableRepository();
     public final static code.repository.I18nTableRepository I18nTableRepository = new I18nTableRepository();
     public final static code.repository.MonitorTableRepository MonitorTableRepository = new MonitorTableRepository();
@@ -36,7 +36,9 @@ public class Main {
 
         Unirest
                 .config()
-                .enableCookieManagement(false);
+                .enableCookieManagement(false)
+                .verifySsl(GlobalConfig.getVerifySsl())
+        ;
 
         new Thread(() -> {
             while (true) {

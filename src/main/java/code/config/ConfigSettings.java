@@ -47,9 +47,17 @@ public class ConfigSettings {
     @JSONField(name = "hide_copyright_tips")
     private Boolean hideCopyrightTips;
 
+    @JSONField(name = "verify_ssl")
+    private Boolean verifySsl;
+
     @JSONField(name = "exclude_keywords")
     private List<String> excludeKeywords;
     @JSONField(name = "exclude_keywords_regex")
     private List<String> excludeKeywordsRegex;
+
+    @JSONField(name = "include_keywords")
+    private List<String> includeKeywords;
+    @JSONField(name = "include_keywords_regex")
+    private List<String> includeKeywordsRegex;
 
 }

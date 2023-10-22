@@ -26,8 +26,11 @@ public enum Command {
 
     Webhook("webhook"),
 
+    SetVerifySsl("verify_ssl"),
     SetExcludeKeywords("exclude_keywords"),
     SetExcludeKeywordsRegex("exclude_keywords_regex"),
+    SetIncludeKeywords("include_keywords"),
+    SetIncludeKeywordsRegex("include_keywords_regex"),
 
     ;
 

@@ -561,6 +561,7 @@ public class Handler {
                         return StepResult.end();
                     }
 
+                    ConfigSettings config = Config.readConfig();
                     List<List<InlineKeyboardButton>> keyboardButton = InlineKeyboardButtonListBuilder
                             .create()
                             .add(InlineKeyboardButtonBuilder
@@ -577,12 +578,19 @@ public class Handler {
                             )
                             .add(InlineKeyboardButtonBuilder
                                     .create()
-                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.ExcludeKeywords), CallbackBuilder.buildCallbackData(true, session, Command.SetExcludeKeywords, null))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.VerifySsl) + String.format("(%s)", config.getVerifySsl() ? I18nHandle.getText(session.getFromId(), I18nEnum.Enable) : I18nHandle.getText(session.getFromId(), I18nEnum.Disable)), CallbackBuilder.buildCallbackData(true, session, Command.SetVerifySsl, null))
                                     .build()
                             )
                             .add(InlineKeyboardButtonBuilder
                                     .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.ExcludeKeywords), CallbackBuilder.buildCallbackData(true, session, Command.SetExcludeKeywords, null))
                                     .add(I18nHandle.getText(session.getFromId(), I18nEnum.ExcludeKeywordsRegex), CallbackBuilder.buildCallbackData(true, session, Command.SetExcludeKeywordsRegex, null))
+                                    .build()
+                            )
+                            .add(InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.IncludeKeywords), CallbackBuilder.buildCallbackData(true, session, Command.SetIncludeKeywords, null))
+                                    .add(I18nHandle.getText(session.getFromId(), I18nEnum.IncludeKeywordsRegex), CallbackBuilder.buildCallbackData(true, session, Command.SetIncludeKeywordsRegex, null))
                                     .build()
                             )
                             .add(InlineKeyboardButtonBuilder
@@ -703,6 +711,100 @@ public class Handler {
                 })
                 .build();
 
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetIncludeKeywordsRegex)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    ConfigSettings config = Config.readConfig();
+                    List<String> includeKeywordsRegex = config.getIncludeKeywordsRegex();
+                    if (null != includeKeywordsRegex && !includeKeywordsRegex.isEmpty()) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), includeKeywordsRegex.stream().collect(Collectors.joining("\n")), false);
+                    }
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeIncludeKeywordsRegex), false);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (StringUtils.isBlank(text)) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                        return StepResult.reject();
+                    }
+                    List<String> includeKeywordsRegex = new ArrayList<>();
+                    if (!text.equals("-1")) {
+                        String[] split = StringUtils.split(text, "\n");
+                        for (String s : split) {
+                            if (StringUtils.isNotBlank(s)) {
+                                includeKeywordsRegex.add(s);
+                            }
+                        }
+                    }
+                    ConfigSettings config = Config.readConfig();
+                    config.setIncludeKeywordsRegex(includeKeywordsRegex);
+                    Config.saveConfig(config);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded) + "\n\n" + includeKeywordsRegex.stream().collect(Collectors.joining("\n")), false);
+                    return StepResult.ok();
+                })
+                .build();
+
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetIncludeKeywords)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    code.handler.message.MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    ConfigSettings config = Config.readConfig();
+                    List<String> includeKeywords = config.getIncludeKeywords();
+                    if (null != includeKeywords && !includeKeywords.isEmpty()) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), includeKeywords.stream().collect(Collectors.joining("\n")), false);
+                    }
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.PleaseSendMeIncludeKeywords), false);
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    String text = session.getText();
+                    if (StringUtils.isBlank(text)) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.FormatError), false);
+                        return StepResult.reject();
+                    }
+                    List<String> includeKeywords = new ArrayList<>();
+                    if (!text.equals("-1")) {
+                        String[] split = StringUtils.split(text, "\n");
+                        for (String s : split) {
+                            if (StringUtils.isNotBlank(s)) {
+                                includeKeywords.add(s);
+                            }
+                        }
+                    }
+                    ConfigSettings config = Config.readConfig();
+                    config.setIncludeKeywords(includeKeywords);
+                    Config.saveConfig(config);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded) + "\n\n" + includeKeywords.stream().collect(Collectors.joining("\n")), false);
+                    return StepResult.ok();
+                })
+                .build();
+
         // Set Chat Buttons
         StepsBuilder
                 .create()
@@ -794,6 +896,46 @@ public class Handler {
                     Config.saveConfig(configSettings);
 
                     MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded), false);
+                    deleteMessage(context);
+
+                    return StepResult.end();
+                })
+                .build();
+
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetVerifySsl)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .init((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    if (!isAdmin(session.getFromId())) {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.YouAreNotAnAdmin), false);
+                        return StepResult.end();
+                    }
+
+                    InlineKeyboardButton inlineKeyboardButton = new InlineKeyboardButton();
+                    inlineKeyboardButton.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Enable));
+                    inlineKeyboardButton.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.SetVerifySsl, "true"));
+
+                    InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+                    inlineKeyboardButton2.setText(I18nHandle.getText(session.getFromId(), I18nEnum.Disable));
+                    inlineKeyboardButton2.setCallbackData(CallbackBuilder.buildCallbackData(false, session, Command.SetVerifySsl, "false"));
+
+                    Message message = MessageHandle.sendInlineKeyboard(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.AreYouSureYouWantToSetVerifySsl), inlineKeyboardButton, inlineKeyboardButton2);
+                    putDeleteMessage(context, message);
+
+                    return StepResult.ok();
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    Boolean of = Boolean.valueOf(session.getText());
+                    ConfigSettings configSettings = Config.readConfig();
+                    configSettings.setVerifySsl(of);
+                    Config.saveConfig(configSettings);
+
+                    MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateSucceeded) + ", " + I18nHandle.getText(session.getFromId(), I18nEnum.NeedToRestartBot), false);
                     deleteMessage(context);
 
                     return StepResult.end();
@@ -1211,7 +1353,13 @@ public class Handler {
                             }
                             for (String s : chatIdArray) {
                                 if (!containsExcludeKeywords(text)) {
-                                    sendRss(s, session, entity, text);
+                                    if (isEnableIncludeKeywords()) {
+                                        if (containsIncludeKeywords(text)) {
+                                            sendRss(s, session, entity, text);
+                                        }
+                                    } else {
+                                        sendRss(s, session, entity, text);
+                                    }
                                 }
                             }
 
@@ -1239,6 +1387,35 @@ public class Handler {
         }
     }
 
+    private static boolean isEnableIncludeKeywords() {
+        ConfigSettings configSettings = Config.readConfig();
+        if (configSettings.getIncludeKeywords().isEmpty() && configSettings.getIncludeKeywordsRegex().isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+    private static boolean containsIncludeKeywords(String text) {
+        try {
+            if (StringUtils.isNotBlank(text)) {
+                ConfigSettings configSettings = Config.readConfig();
+                for (String includeKeywords : configSettings.getIncludeKeywords()) {
+                    if (StringUtils.containsIgnoreCase(text, includeKeywords)) {
+                        return true;
+                    }
+                }
+                for (String includeKeywordsRegex : configSettings.getIncludeKeywordsRegex()) {
+                    Pattern pattern = Pattern.compile(includeKeywordsRegex);
+                    Matcher matcher = pattern.matcher(text);
+                    if (matcher.find()) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return false;
+    }
     private static boolean containsExcludeKeywords(String text) {
         try {
             if (StringUtils.isNotBlank(text)) {
