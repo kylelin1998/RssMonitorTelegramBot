@@ -1326,12 +1326,17 @@ public class Handler {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
 
+                        String uri = entry.getUri();
+                        if (StringUtils.isBlank(uri)) {
+                            uri = entry.getLink();
+                        }
+
                         SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
                         sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                         sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                         sentRecordTableEntity.setName(name);
                         sentRecordTableEntity.setChatId(entity.getChatId());
-                        sentRecordTableEntity.setLink(entry.getLink());
+                        sentRecordTableEntity.setUri(uri);
                         SentRecordTableRepository.save(sentRecordTableEntity);
                     }
                 }
@@ -1340,7 +1345,12 @@ public class Handler {
                 for (int i = 0; i < entries.size(); i++) {
                     SyndEntry entry = entries.get(i);
 
-                    if (SentRecordTableRepository.exists(entry.getLink(), name, entity.getChatId()) && !isTest) {
+                    String uri = entry.getUri();
+                    if (StringUtils.isBlank(uri)) {
+                        uri = entry.getLink();
+                    }
+
+                    if (SentRecordTableRepository.exists(uri, name, entity.getChatId()) && !isTest) {
                         continue;
                     }
 
@@ -1369,7 +1379,7 @@ public class Handler {
                                 sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                                 sentRecordTableEntity.setName(name);
                                 sentRecordTableEntity.setChatId(entity.getChatId());
-                                sentRecordTableEntity.setLink(entry.getLink());
+                                sentRecordTableEntity.setUri(uri);
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
