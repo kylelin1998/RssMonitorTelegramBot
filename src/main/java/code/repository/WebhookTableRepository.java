@@ -11,7 +11,7 @@ import java.util.List;
 public class WebhookTableRepository extends TableRepository<WebhookTableEntity> {
 
     public WebhookTableRepository() {
-        super(Config.DBPath);
+        super(Config.DBPath, false);
     }
 
     public WebhookTableEntity selectOne(String chatId) {

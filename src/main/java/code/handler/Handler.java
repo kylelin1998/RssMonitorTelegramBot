@@ -104,6 +104,20 @@ public class Handler {
             }
         }).start();
 
+        StepsBuilder
+                .create()
+                .bindCommand(Command.Start, Command.Help)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.HelpText), false);
+                    return StepResult.end();
+                })
+                .build();
+
         // Create
         StepsBuilder
                 .create()

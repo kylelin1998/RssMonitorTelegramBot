@@ -10,6 +10,7 @@ import org.sqlite.jdbc4.JDBC4ResultSet;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -20,15 +21,37 @@ public abstract class TableRepository<T extends TableEntity> {
 
     private String tableName;
     private String dbPath;
+    private boolean checkColumn = false;
 
     public TableRepository(String dbPath, String tableName) {
         this.tableName = tableName;
         this.dbPath = dbPath;
+        createTableHandle();
+    }
+    public TableRepository(String dbPath, String tableName, boolean checkColumn) {
+        this.tableName = tableName;
+        this.dbPath = dbPath;
+        this.checkColumn = checkColumn;
+        createTableHandle();
+        checkColumnHandle();
+    }
+    public TableRepository(String dbPath, boolean checkColumn) {
+        this.tableName = getT().getAnnotation(TableName.class).name();
+        this.dbPath = dbPath;
+        this.checkColumn = checkColumn;
+        createTableHandle();
+        checkColumnHandle();
+    }
+
+    private void createTableHandle() {
         try {
             SqliteUtil.execute(dbPath, (statement) -> {
-                String sql = getCreateTableSql();
-                if (StringUtils.isNotBlank(sql)) {
-                    statement.execute(sql);
+                String createTableSql = getCreateTableSql();
+                if (StringUtils.isBlank(createTableSql)) {
+                    createTableSql = SqlBuilder.buildCreateTableSql(getT());
+                }
+                if (StringUtils.isNotBlank(createTableSql)) {
+                    statement.execute(createTableSql);
                 }
                 return null;
             });
@@ -36,18 +59,25 @@ public abstract class TableRepository<T extends TableEntity> {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
         }
     }
-
-    public TableRepository(String dbPath) {
-        this.tableName = getT().getAnnotation(TableName.class).name();
-        this.dbPath = dbPath;
+    private void checkColumnHandle() {
         try {
-            SqliteUtil.execute(dbPath, (statement) -> {
-                String sql = SqlBuilder.buildCreateTableSql(getT());
-                if (StringUtils.isNotBlank(sql)) {
-                    statement.execute(sql);
-                }
-                return null;
-            });
+            if (this.checkColumn) {
+                SqliteUtil.execute(dbPath, (statement) -> {
+                    Class<T> t = getT();
+                    DatabaseMetaData metaData = statement.getConnection().getMetaData();
+                    List<TableField> nameList = SqlBuilder.getNameList(t);
+                    for (TableField name : nameList) {
+                        ResultSet rs = metaData.getColumns(null, null, tableName, name.name());
+                        if (!rs.next()) {
+                            String sql = SqlBuilder.buildAlterTableAddColumnNameSql(tableName, name.sql());
+                            if (StringUtils.isNotBlank(sql)) {
+                                statement.execute(sql);
+                            }
+                        }
+                    }
+                    return null;
+                });
+            }
         } catch (Exception e) {
             log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
         }
@@ -86,7 +116,6 @@ public abstract class TableRepository<T extends TableEntity> {
         }
         return null;
     }
-
     public Boolean delete(T where) {
         try {
             return (boolean) execute((statement) -> {

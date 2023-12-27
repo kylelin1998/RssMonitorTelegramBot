@@ -53,4 +53,12 @@ public class MonitorTableEntity implements TableEntity {
     @TableField(name = "zero_delay", sql = "zero_delay int(2)")
     private Integer zeroDelay;
 
+    @DisplayConfigAnnotation(i18n = "capture_flag", set = true)
+    @TableField(name = "capture_flag", sql = "capture_flag int(2)")
+    private Integer captureFlag;
+
+    @DisplayConfigAnnotation(i18n = "translation_language", set = true)
+    @TableField(name = "translation_language", sql = "translation_language text")
+    private String translationLanguage;
+
 }

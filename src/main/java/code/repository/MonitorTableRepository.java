@@ -11,7 +11,7 @@ import java.util.List;
 public class MonitorTableRepository extends TableRepository<MonitorTableEntity> {
 
     public MonitorTableRepository() {
-        super(Config.DBPath);
+        super(Config.DBPath, true);
     }
 
     public MonitorTableEntity selectOne(String id, String chatId) {

@@ -123,6 +123,9 @@ public enum I18nEnum {
     PleaseSendMeIncludeKeywords("please_send_me_include_keywords"),
     PleaseSendMeIncludeKeywordsRegex("please_send_me_include_keywords_regex"),
 
+    CaptureFlag("capture_flag"),
+    TranslationLanguage("translation_language"),
+
     ;
 
     private String key;

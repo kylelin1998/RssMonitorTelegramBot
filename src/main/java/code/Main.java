@@ -19,6 +19,19 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+/**
+ *
+ *    ,---.  ,--.                                   ,--.          ,--.,--.
+ *   /  O  \ |  |,--.   ,--. ,--,--.,--. ,--.,---.  |  |-.  ,---. |  |`--' ,---.,--.  ,--.,---.
+ *  |  .-.  ||  ||  |.'.|  |' ,-.  | \  '  /(  .-'  | .-. '| .-. :|  |,--.| .-. :\  `'  /| .-. :
+ *  |  | |  ||  ||   .'.   |\ '-'  |  \   ' .-'  `) | `-' |\   --.|  ||  |\   --. \    / \   --.
+ *  `--' `--'`--''--'   '--' `--`--'.-'  /  `----'   `---'  `----'`--'`--' `----'  `--'   `----'
+ *                                  `---'
+ *  Always believe that something wonderful is about to happen
+ *
+ *  If you have any additional features you'd like to suggest or if you have any feedback,
+ *  you can reach me at my email address: email@kylelin1998.com
+ */
 @Slf4j
 public class Main {
     public static CommandsHandler Bot = null;

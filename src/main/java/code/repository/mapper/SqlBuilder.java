@@ -2,8 +2,11 @@ package code.repository.mapper;
 
 import code.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringJoiner;
 
 @Slf4j
@@ -14,6 +17,18 @@ public class SqlBuilder {
     }
     public static String getTableName(Class<? extends TableEntity> tableClass) {
         return tableClass.getAnnotation(TableName.class).name();
+    }
+
+    public static List<TableField> getNameList(Class<? extends TableEntity> tableClass) {
+        ArrayList<TableField> list = new ArrayList<>();
+        for (Field field : tableClass.getDeclaredFields()) {
+            TableField tableField = field.getAnnotation(TableField.class);
+            if (null == tableField) {
+                continue;
+            }
+            list.add(tableField);
+        }
+        return list;
     }
 
     public static String buildCreateTableSql(Class<? extends TableEntity> tableClass) {
@@ -30,6 +45,10 @@ public class SqlBuilder {
 
         String sql = "create table if not exists " + tableName + " " + joiner;
         return sql;
+    }
+
+    public static String buildAlterTableAddColumnNameSql(String tableName, String column) {
+        return String.format("ALTER TABLE %s ADD COLUMN %s", tableName, column);
     }
 
     private static String buildFieldValueSql(TableEntity tableEntity, String delimiter, String prefix, String suffix) {

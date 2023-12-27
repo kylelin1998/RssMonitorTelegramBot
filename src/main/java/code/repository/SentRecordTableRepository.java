@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SentRecordTableRepository extends TableRepository<SentRecordTableEntity> {
 
     public SentRecordTableRepository() {
-        super(Config.DBPath);
+        super(Config.DBPath, false);
     }
 
     public void save(SentRecordTableEntity entity) {

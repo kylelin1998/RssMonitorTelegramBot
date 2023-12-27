@@ -1,6 +1,5 @@
 package code.handler;
 
-import code.commands.*;
 import code.handler.message.CallbackBuilder;
 import code.handler.steps.StepsChatSession;
 import code.handler.steps.StepsChatSessionBuilder;
@@ -20,17 +19,10 @@ public class CommandsHandler extends TelegramLongPollingCommandBot {
 
     public CommandsHandler() {
         super();
-        start();
     }
 
     public CommandsHandler(DefaultBotOptions botOptions) {
         super(botOptions);
-        start();
-    }
-
-    public void start() {
-        register(new HelpCommand());
-        register(new StartCommand());
     }
 
     @Override
