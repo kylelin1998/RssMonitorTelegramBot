@@ -14,6 +14,24 @@ Support RSS article auto sync to Telegraph platform.
 
 Support custom Webhook invocation.
 
+## Specific Features
+#### Notifications
+Not only can you receive notifications on Telegram, but you can also customize webhook notifications to any platform you desire.
+#### Notification Targets
+You have the option to set global notification targets, and each individual plan can also have its unique notification targets. If a plan doesn't have specific notification targets configured, it will default to the global ones. This provides great flexibility.
+#### Unlimited Plans
+You can add an unlimited number of RSS monitoring plans, with no restrictions, for easy management.
+#### Notification Template Variables
+Highly configurable notification text, with support for numerous template variables.
+#### Resource Crawling
+You can enable resource crawling for your plans. Once enabled, it will automatically grab an image from the RSS content, combining it with the notification text and sending it to Telegram.
+#### Translation of Your Choice
+Template variables support translation to the language of your choice. For example, you can translate the title into English, Thai, Russian, German, etc.
+#### Convenient Upgrades
+The bot includes a built-in upgrade feature. After initial deployment, you can simply click on the upgrade button within the bot for future upgrades.
+#### Lightweight
+Takes up around 100MB of memory in the system, and uses a lightweight SQLite database, ensuring it remains truly lightweight.
+
 ## Deploy
 The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
 
