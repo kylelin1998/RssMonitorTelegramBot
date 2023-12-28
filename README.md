@@ -85,6 +85,8 @@ bot admin主要作用是设置成只有你才能触发命令
 * interval_minute -> 监控间隔(分钟)
 * chatIdArray -> 需要发送的Chat Id列表
 * permission_chat_id_array -> 你只能允许列表下的这些chat id使用机器人， 可以填写个人的，或者是群的chat id
+* translate_youdao_key -> 有道翻译应用id
+* translate_youdao_secret -> 有道翻译密钥
 
 ### 第一步:
 编译镜像

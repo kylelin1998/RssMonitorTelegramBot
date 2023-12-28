@@ -79,12 +79,16 @@ Then create another folder named config and the config folder must contains a js
   ]
 }
 ```
-```
-on proxy -> Whether to open proxy
-bot admin id -> Bot's admin, the id is chat id of Telegram.
-bot name, 和 bot token -> @BotFather has given bot name,  bot token
-permission chat id array -> Allow using the bot.
-```
+bot admin's main role is to set it so that only you can trigger commands.
+* on_proxy -> Enable proxy or not
+* bot_admin_id -> Chat ID of the Bot administrator
+* bot_name -> Bot username
+* bot_token -> Bot token
+* interval_minute -> Monitoring interval (in minutes)
+* chatIdArray -> List of Chat IDs to send notifications to
+* permission_chat_id_array -> Only allow the use of the bot by the chat IDs in this list. You can fill in your personal chat ID or group chat IDs.
+* translate_youdao_key -> Youdao translation application ID
+* translate_youdao_secret -> Youdao translation secret key
 
 ### First step:
 Build a docker image for use.
