@@ -1,4 +1,4 @@
-package code.repository.mapper;
+package code.repository.base;
 
 public interface TableEntity {
 }

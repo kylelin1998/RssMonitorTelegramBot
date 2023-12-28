@@ -71,6 +71,25 @@ public class MessageHandle {
         return null;
     }
 
+    public static Message sendImage(String chatId, Integer replyToMessageId, String text, File image, List<List<InlineKeyboardButton>> keyboard) {
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(chatId);
+        sendPhoto.setReplyToMessageId(replyToMessageId);
+        sendPhoto.setCaption(text);
+        sendPhoto.setPhoto(new InputFile(image));
+        if (null != keyboard) {
+            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+            inlineKeyboardMarkup.setKeyboard(keyboard);
+            sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
+        }
+        try {
+            return Bot.execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return null;
+    }
+
     public static void updateInlineKeyboardList(Message message, String chatId, String text, List<List<InlineKeyboardButton>> keyboard) {
         EditMessageText editMessageText = new EditMessageText();
         editMessageText.setChatId(chatId);

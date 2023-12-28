@@ -11,6 +11,7 @@ import code.handler.steps.StepsChatSession;
 import code.handler.store.ChatButtonsStore;
 import code.handler.store.WebhookStore;
 import code.util.*;
+import code.util.translate.Translate;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
 import com.rometools.rome.feed.synd.SyndContent;
@@ -1254,7 +1255,6 @@ public class Handler {
                     return StepResult.end();
                 })
                 .build();
-
     }
 
     private static void putDeleteMessage(Map<String, Object> context, Message message) {
@@ -1541,7 +1541,7 @@ public class Handler {
                 String temp = Config.TempDir + File.separator + UUID.randomUUID() + ".png";
                 boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
                 if (download) {
-                    Message message = MessageHandle.sendImage(chatId, null, text, new File(temp));
+                    Message message = MessageHandle.sendImage(chatId, null, text, new File(temp), build);
                     if (null != message) {
                         textMode = false;
                     }
@@ -1636,7 +1636,42 @@ public class Handler {
                 return null;
             }
 
-            String s = template;
+            String s = new String(template);
+
+            if (template.contains("${translate")) {
+                try {
+                    String pattern = "\\$\\{translate\\|(\\w+-\\w+|\\w+)\\|\\w+\\}";
+
+                    Pattern regex = Pattern.compile(pattern);
+                    Matcher matcher = regex.matcher(s);
+
+                    while (matcher.find()) {
+                        String variable = matcher.group();
+                        if (StringUtils.isNotBlank(variable)) {
+                            String variableEdit = StringUtils.removeStart(variable, "${");
+                            variableEdit = StringUtils.removeEnd(variableEdit, "}");
+                            String[] split = StringUtils.split(variableEdit, "|");
+                            if (split.length == 3) {
+                                String s1 = split[0];
+                                String s2 = split[1];
+                                String s3 = split[2];
+
+                                String text = "";
+                                if ("title".equals(s3)) {
+                                    text = entry.getTitle();
+                                } else if ("description".equals(s3)) {
+                                    text = getDescription(entry);
+                                }
+                                String translate = Translate.translate(text, "auto", s2);
+                                s = StringUtils.replace(s, variable, translate);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+            }
+
             if (template.contains("${link}")) {
                 s = StringUtils.replace(s, "${link}", entry.getLink());
             }

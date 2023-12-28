@@ -1,13 +1,15 @@
-package code.repository.mapper;
+package code.repository.base;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface TableName {
+@Target(value = ElementType.FIELD)
+@Retention(value = RetentionPolicy.RUNTIME)
+public @interface TableField {
+
+    String sql();
 
     String name();
 

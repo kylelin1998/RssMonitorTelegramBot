@@ -112,6 +112,11 @@ template说明:
 * ${author} -> 文章作者
 * ${telegraph} -> Telegraph文章地址
 * ${description} -> 文章内容
+* ${translate|zh|title} -> 将标题翻译成中文
+* ${translate|zh|description} -> 将描述翻译成中文
+* ${translate|en|title} -> 将标题翻译成英文
+* ${translate|en|description} -> 将描述翻译成英文
+* 翻译中间的代码可以更改为自己想要翻译的...以此类推...
 
 例子, 会自动替换对应内容:
 ```

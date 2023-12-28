@@ -1,8 +1,8 @@
 package code.eneity;
 
-import code.repository.mapper.TableEntity;
-import code.repository.mapper.TableField;
-import code.repository.mapper.TableName;
+import code.repository.base.TableEntity;
+import code.repository.base.TableField;
+import code.repository.base.TableName;
 import lombok.Data;
 
 @TableName(name = "webhook_table")

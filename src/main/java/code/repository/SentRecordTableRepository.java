@@ -2,7 +2,7 @@ package code.repository;
 
 import code.config.Config;
 import code.eneity.SentRecordTableEntity;
-import code.repository.mapper.TableRepository;
+import code.repository.base.TableRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

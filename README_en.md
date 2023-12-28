@@ -112,6 +112,11 @@ Support custom message content
 * ${author} -> Article author
 * ${telegraph} -> Telegraph URL
 * ${description} -> Article description
+* ${translate|zh|title} -> Translate the title into Chinese
+* ${translate|zh|description} -> Translate the description into Chinese
+* ${translate|en|title} -> Translate the title into English
+* ${translate|en|description} -> Translate the description into English
+* You can modify the code in between to translate whatever you want... and so on...
 
 For example, automatically replace the variable:
 ```

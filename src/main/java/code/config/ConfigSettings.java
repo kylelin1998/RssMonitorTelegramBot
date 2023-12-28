@@ -60,4 +60,9 @@ public class ConfigSettings {
     @JSONField(name = "include_keywords_regex")
     private List<String> includeKeywordsRegex;
 
+    @JSONField(name = "translate_youdao_key")
+    public String translateYoudaoKey;
+    @JSONField(name = "translate_youdao_secret")
+    public String translateYoudaoSecret;
+
 }

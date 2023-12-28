@@ -34,6 +34,7 @@ public enum Command {
     SetIncludeKeywords("include_keywords"),
     SetIncludeKeywordsRegex("include_keywords_regex"),
     SetCaptureFlag("set_capture_flag"),
+    SetTranslationLanguage("set_translation_language"),
 
     ;
 

@@ -2,7 +2,7 @@ package code.repository;
 
 import code.config.Config;
 import code.eneity.WebhookTableEntity;
-import code.repository.mapper.TableRepository;
+import code.repository.base.TableRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
