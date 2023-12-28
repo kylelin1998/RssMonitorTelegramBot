@@ -29,8 +29,6 @@ You can enable resource crawling for your plans. Once enabled, it will automatic
 Template variables support translation to the language of your choice. For example, you can translate the title into English, Thai, Russian, German, etc.
 #### Convenient Upgrades
 The bot includes a built-in upgrade feature. After initial deployment, you can simply click on the upgrade button within the bot for future upgrades.
-#### Lightweight
-Takes up around 100MB of memory in the system, and uses a lightweight SQLite database, ensuring it remains truly lightweight.
 
 ## Deploy
 The bot's deploy steps based on the Docker, its upgrade feature also based on the Docker, so please use the Docker to deploy it in case appear error.
