@@ -111,6 +111,7 @@ template说明:
 * ${title} -> 文章标题
 * ${author} -> 文章作者
 * ${telegraph} -> Telegraph文章地址
+* ${description} -> 文章内容
 
 例子, 会自动替换对应内容:
 ```

@@ -33,6 +33,7 @@ public enum Command {
     SetExcludeKeywordsRegex("exclude_keywords_regex"),
     SetIncludeKeywords("include_keywords"),
     SetIncludeKeywordsRegex("include_keywords_regex"),
+    SetCaptureFlag("set_capture_flag"),
 
     ;
 

@@ -111,6 +111,7 @@ Support custom message content
 * ${title} -> Article title
 * ${author} -> Article author
 * ${telegraph} -> Telegraph URL
+* ${description} -> Article description
 
 For example, automatically replace the variable:
 ```

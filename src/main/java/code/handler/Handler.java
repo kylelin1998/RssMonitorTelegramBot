@@ -23,9 +23,15 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -278,8 +284,11 @@ public class Handler {
                         return StepResult.ok();
                     }
 
-                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), false);
-
+                    if (session.getText().equals("template")) {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor7), false);
+                    } else {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), false);
+                    }
                     return StepResult.ok();
                 }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     String id = (String) context.get("id");
@@ -476,6 +485,37 @@ public class Handler {
                         MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
                     }
 
+                    return StepResult.end();
+                })
+                .build();
+
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetCaptureFlag)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
+                    if (null != settings) {
+                        if (null == settings.getCaptureFlag()) {
+                            settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+                        }
+                        boolean captureFlag = !YesOrNoEnum.get(settings.getCaptureFlag()).get().isBool();
+                        if (captureFlag) {
+                            settings.setCaptureFlag(YesOrNoEnum.Yes.getNum());
+                            MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlagOnNote), false);
+                        } else {
+                            settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+                            MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlagOffNote), false);
+                        }
+                        MonitorTableRepository.update(settings);
+                        showMonitorHandle(session, session.getText());
+                    } else {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
+                    }
                     return StepResult.end();
                 })
                 .build();
@@ -1233,6 +1273,11 @@ public class Handler {
     private static void showMonitorHandle(StepsChatSession session, String id) {
         MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
         if (null != settings) {
+            if (null == settings.getCaptureFlag()) {
+                settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+            }
+            boolean captureFlag = YesOrNoEnum.get(settings.getCaptureFlag()).get().isBool();
+
             List<List<InlineKeyboardButton>> build = InlineKeyboardButtonListBuilder
                     .create()
                     .add(
@@ -1240,6 +1285,12 @@ public class Handler {
                                     .create()
                                     .add((YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "✅ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.On), CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()))
                                     .add((!YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "❌ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.Off), CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()))
+                                    .build()
+                    )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add((captureFlag ? "✅ " : "❌ ") + I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlag), CallbackBuilder.buildCallbackData(true, session, Command.SetCaptureFlag, settings.getId()))
                                     .build()
                     )
                     .add(
@@ -1370,6 +1421,14 @@ public class Handler {
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
+                        String image = null;
+                        Integer captureFlag = (null == entity.getCaptureFlag() ? YesOrNoEnum.No.getNum() : entity.getCaptureFlag());
+                        Optional<Boolean> captureFlagBoolean = YesOrNoEnum.toBoolean(captureFlag);
+                        if (captureFlagBoolean.isPresent() && captureFlagBoolean.get()) {
+                            List<String> images = getImages(entry);
+                            image = images.size() == 0 ? null : images.get(0);
+                        }
+
                         if (!isTest) {
                             List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
                             if (null == chatIdArray || chatIdArray.isEmpty()) {
@@ -1379,10 +1438,10 @@ public class Handler {
                                 if (!containsExcludeKeywords(text)) {
                                     if (isEnableIncludeKeywords()) {
                                         if (containsIncludeKeywords(text)) {
-                                            sendRss(s, session, entity, text);
+                                            sendRss(s, session, entity, text, image);
                                         }
                                     } else {
-                                        sendRss(s, session, entity, text);
+                                        sendRss(s, session, entity, text, image);
                                     }
                                 }
                             }
@@ -1397,7 +1456,7 @@ public class Handler {
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
-                            sendRss(session.getChatId(), session, entity, text);
+                            sendRss(session.getChatId(), session, entity, text, image);
                             if (i >= 2) {
                                 break;
                             }
@@ -1463,7 +1522,7 @@ public class Handler {
         return false;
     }
 
-    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text) {
+    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text, String image) {
         List<List<InlineKeyboardButton>> build = null;
         Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
         if (buttons.isPresent()) {
@@ -1476,7 +1535,24 @@ public class Handler {
             }
         }
 
-        MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+        boolean textMode = true;
+        if (StringUtils.isNotBlank(image)) {
+            try {
+                String temp = Config.TempDir + File.separator + UUID.randomUUID() + ".png";
+                boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
+                if (download) {
+                    Message message = MessageHandle.sendImage(chatId, null, text, new File(temp));
+                    if (null != message) {
+                        textMode = false;
+                    }
+                }
+            } catch (Exception e) {
+                log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+            }
+        }
+        if (textMode) {
+            MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+        }
 
         WebhookTableEntity webhookTableEntity = WebhookTableRepository.selectOne(entity.getChatId());
         if (null != webhookTableEntity) {
@@ -1512,6 +1588,48 @@ public class Handler {
         }
     }
 
+    private static List<String> getImages(SyndEntry entry) {
+        List<String> list = new ArrayList<>();
+        if (null != entry) {
+            SyndContent description = entry.getDescription();
+            if ("text/html".equals(description.getType())) {
+                try {
+                    Document document = Jsoup.parse(description.getValue());
+                    if (null != document) {
+                        Elements images = document.select("img");
+                        for (Element image : images) {
+                            String imageUrl = image.attr("src");
+                            if (StringUtils.isNotBlank(imageUrl)) {
+                                list.add(imageUrl);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+            }
+        }
+        return list;
+    }
+    private static String getDescription(SyndEntry entry) {
+        if (null != entry) {
+            SyndContent description = entry.getDescription();
+            if ("text/html".equals(description.getType())) {
+                try {
+                    Document document = Jsoup.parse(description.getValue());
+                    if (null != document) {
+                        String text = document.text();
+                        return StringUtils.defaultIfBlank(text, "");
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+            } else {
+                return StringUtils.defaultIfBlank(description.getValue(), "");
+            }
+        }
+        return "";
+    }
     private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry) {
         try {
             if (StringUtils.isBlank(template) || null == entry) {
@@ -1523,8 +1641,10 @@ public class Handler {
                 s = StringUtils.replace(s, "${link}", entry.getLink());
             }
             if (template.contains("${title}")) {
-                System.out.println(entry.getTitle());
                 s = StringUtils.replace(s, "${title}", entry.getTitle());
+            }
+            if (template.contains("${description}")) {
+                s = StringUtils.replace(s, "${description}", getDescription(entry));
             }
             String author = entry.getAuthor();
             if (StringUtils.isBlank(author)) {

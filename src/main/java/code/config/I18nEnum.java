@@ -125,6 +125,9 @@ public enum I18nEnum {
 
     CaptureFlag("capture_flag"),
     TranslationLanguage("translation_language"),
+    SetCaptureFlag("set_capture_flag"),
+    SetCaptureFlagOnNote("set_capture_flag_on_note"),
+    SetCaptureFlagOffNote("set_capture_flag_off_note"),
 
     ;
 

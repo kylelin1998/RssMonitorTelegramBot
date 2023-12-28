@@ -32,6 +32,21 @@ public class DownloadUtil {
         return null;
     }
 
+    public static boolean download(RequestProxyConfig requestProxyConfig, String url, String file) {
+        try {
+            GetRequest request = Unirest
+                    .get(url)
+                    .connectTimeout((int) TimeUnit.MILLISECONDS.convert(30, TimeUnit.SECONDS))
+                    ;
+            requestProxyConfig.viaProxy(request);
+            HttpResponse<File> response = request.asFile(file, StandardCopyOption.REPLACE_EXISTING);
+            return response.getStatus() == 200;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return false;
+    }
+
     public static boolean download(RequestProxyConfig requestProxyConfig, String url, String file, ProgressMonitor progressMonitor) {
         try {
             GetRequest request = Unirest
