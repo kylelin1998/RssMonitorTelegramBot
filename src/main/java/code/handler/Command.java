@@ -23,18 +23,18 @@ public enum Command {
     Restart("restart"),
     UpdateConfig("uc"),
     Upgrade("upgrade"),
-    SetChatButtons("set_chat_buttons"),
-    HideCopyrightTips("hide_copyright_tips"),
 
     Webhook("webhook"),
 
-    SetVerifySsl("verify_ssl"),
-    SetExcludeKeywords("exclude_keywords"),
-    SetExcludeKeywordsRegex("exclude_keywords_regex"),
-    SetIncludeKeywords("include_keywords"),
-    SetIncludeKeywordsRegex("include_keywords_regex"),
-    SetCaptureFlag("set_capture_flag"),
-    SetTranslationLanguage("set_translation_language"),
+    SetVerifySsl("rssb01"),
+    SetExcludeKeywords("rssb02"),
+    SetExcludeKeywordsRegex("rssb03"),
+    SetIncludeKeywords("rssb04"),
+    SetIncludeKeywordsRegex("rssb05"),
+    SetCaptureFlag("rssb06"),
+    SetTranslationLanguage("rssb07"),
+    SetChatButtons("rssb11"),
+    HideCopyrightTips("rssb10"),
 
     ;
 
