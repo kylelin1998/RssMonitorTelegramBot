@@ -5,12 +5,14 @@ import com.alibaba.fastjson2.JSON;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -211,6 +213,22 @@ public class MessageHandle {
         }
 
         return response;
+    }
+
+    public static List<Message> sendMediaGroup(String chatId, List<InputMedia> mediaList, boolean notification) {
+        SendMediaGroup sendMediaGroup = new SendMediaGroup();
+        sendMediaGroup.setChatId(chatId);
+        sendMediaGroup.setMedias(mediaList);
+        if (!notification) {
+            sendMediaGroup.disableNotification();
+        }
+        try {
+            List<Message> execute = Bot.execute(sendMediaGroup);
+            return execute;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+        }
+        return null;
     }
 
     public static Message sendMessage(String chatId, String text, boolean webPagePreview) {

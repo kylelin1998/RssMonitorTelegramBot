@@ -29,10 +29,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.io.File;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -103,7 +104,7 @@ public class Handler {
                         if (GlobalConfig.getDebug()) {
                             log.info("Zero delay, end timestamp: {}, total time: {}", endMillis, endMillis - startMillis);
                         }
-                        TimeUnit.SECONDS.sleep(2);
+                        TimeUnit.SECONDS.sleep(5);
                     }
                 } catch (Exception e) {
                     log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
@@ -1421,12 +1422,11 @@ public class Handler {
 
                     String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
-                        String image = null;
+                        List<String> images = null;
                         Integer captureFlag = (null == entity.getCaptureFlag() ? YesOrNoEnum.No.getNum() : entity.getCaptureFlag());
                         Optional<Boolean> captureFlagBoolean = YesOrNoEnum.toBoolean(captureFlag);
                         if (captureFlagBoolean.isPresent() && captureFlagBoolean.get()) {
-                            List<String> images = getImages(entry);
-                            image = images.size() == 0 ? null : images.get(0);
+                            images = getImages(entry);
                         }
 
                         if (!isTest) {
@@ -1438,10 +1438,10 @@ public class Handler {
                                 if (!containsExcludeKeywords(text)) {
                                     if (isEnableIncludeKeywords()) {
                                         if (containsIncludeKeywords(text)) {
-                                            sendRss(s, session, entity, text, image);
+                                            sendRss(s, session, entity, text, images);
                                         }
                                     } else {
-                                        sendRss(s, session, entity, text, image);
+                                        sendRss(s, session, entity, text, images);
                                     }
                                 }
                             }
@@ -1456,7 +1456,7 @@ public class Handler {
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
-                            sendRss(session.getChatId(), session, entity, text, image);
+                            sendRss(session.getChatId(), session, entity, text, images);
                             if (i >= 2) {
                                 break;
                             }
@@ -1522,7 +1522,7 @@ public class Handler {
         return false;
     }
 
-    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text, String image) {
+    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text, List<String> images) {
         List<List<InlineKeyboardButton>> build = null;
         Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
         if (buttons.isPresent()) {
@@ -1535,22 +1535,55 @@ public class Handler {
             }
         }
 
-        boolean textMode = true;
-        if (StringUtils.isNotBlank(image)) {
+        boolean sendText = true;
+        if (null != images && !images.isEmpty()) {
             try {
-                String temp = Config.TempDir + File.separator + UUID.randomUUID() + ".png";
-                boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
-                if (download) {
-                    Message message = MessageHandle.sendImage(chatId, null, text, new File(temp), build);
-                    if (null != message) {
-                        textMode = false;
+                boolean sendSingleImage = true;
+                if (images.size() > 1) {
+                    List<InputMedia> inputMedia = new ArrayList<>();
+                    AtomicInteger countAtomic = new AtomicInteger(0);
+                    for (String image : images) {
+                        if (inputMedia.size() >= 10) {
+                            break;
+                        }
+                        String name = UUID.randomUUID().toString();
+                        String temp = Config.TempDir + File.separator + name + ".png";
+                        boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
+                        if (download) {
+                            int count = countAtomic.addAndGet(1);
+
+                            InputMediaPhoto inputMediaPhoto = new InputMediaPhoto();
+                            inputMediaPhoto.setMedia(new File(temp), name);
+                            if (count == 1) {
+                                inputMediaPhoto.setCaption(text);
+                            }
+                            inputMedia.add(inputMediaPhoto);
+                        }
+                    }
+                    if (inputMedia.size() >= 2) {
+                        List<Message> messages = MessageHandle.sendMediaGroup(chatId, inputMedia, YesOrNoEnum.toBoolean(entity.getNotification()).get());
+                        if (null != messages && !messages.isEmpty()) {
+                            sendSingleImage = false;
+                            sendText = false;
+                        }
+                    }
+                }
+                if (sendSingleImage) {
+                    String image = images.get(0);
+                    String temp = Config.TempDir + File.separator + UUID.randomUUID() + ".png";
+                    boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
+                    if (download) {
+                        Message message = MessageHandle.sendImage(chatId, null, text, new File(temp), build);
+                        if (null != message) {
+                            sendText = false;
+                        }
                     }
                 }
             } catch (Exception e) {
                 log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
             }
         }
-        if (textMode) {
+        if (sendText) {
             MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
         }
 
@@ -1611,21 +1644,31 @@ public class Handler {
         }
         return list;
     }
-    private static String getDescription(SyndEntry entry) {
+    public static String getDescription(SyndEntry entry) {
         if (null != entry) {
             SyndContent description = entry.getDescription();
             if ("text/html".equals(description.getType())) {
-                try {
-                    Document document = Jsoup.parse(description.getValue());
-                    if (null != document) {
-                        String text = document.text();
-                        return StringUtils.defaultIfBlank(text, "");
-                    }
-                } catch (Exception e) {
-                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
-                }
+                return getDescription(description.getValue());
             } else {
                 return StringUtils.defaultIfBlank(description.getValue(), "");
+            }
+        }
+        return "";
+    }
+    public static String getDescription(String html) {
+        if (null != html) {
+            try {
+                Document document = Jsoup.parse(html);
+                if (null != document) {
+                    Elements br = document.select("br");
+                    for (Element element : br) {
+                        element.html("\n");
+                    }
+                    String text = document.wholeText();
+                    return StringUtils.defaultIfBlank(text, "");
+                }
+            } catch (Exception e) {
+                log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
             }
         }
         return "";
