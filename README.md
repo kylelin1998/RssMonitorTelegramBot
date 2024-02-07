@@ -98,13 +98,6 @@ docker build -t rssb .
 docker run --name rssb -d -v $(pwd):/app --restart=always rssb
 ```
 
-## 关于我
-我的TG: https://t.me/KyleLin1998
-
-我的TG频道: https://t.me/KyleLin1998Channel
-
-我的邮箱: email@kylelin1998.com
-
 ## 使用说明
 **机器人命令:**
 ```
