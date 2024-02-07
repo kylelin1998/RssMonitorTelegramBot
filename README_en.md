@@ -100,13 +100,6 @@ Run the docker image of just then build.
 docker run --name rssb -d -v $(pwd):/app --restart=always rssb
 ```
 
-## About
-My telegram: https://t.me/KyleLin1998
-
-My telegram channel: https://t.me/KyleLin1998Channel
-
-My email: email@kylelin1998.com
-
 ## Usage
 **Commands:**
 ```
