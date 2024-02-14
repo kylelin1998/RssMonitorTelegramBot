@@ -38,11 +38,11 @@ RSS监控最新文章， 如果有监控到最新文章会通知到您设置好�
 
 #### 一键部署
 ```
-docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token --restart=always kylelin1998/rss-tg-bot
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token --log-opt max-size=10MB --log-opt max-file=5 --restart=always kylelin1998/rss-tg-bot
 ```
 #### 一键部署(开启代理)
 ```
-docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --restart=always kylelin1998/rss-tg-bot
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=管理者的ChatId -e BOT_NAME=机器人的username -e BOT_TOKEN=机器人token -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --log-opt max-size=10MB --log-opt max-file=5 --restart=always kylelin1998/rss-tg-bot
 ```
 
 ### 部署方式2 (不推荐)
